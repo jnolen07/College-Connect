@@ -1,0 +1,548 @@
+<div class="dash">
+
+  <header class="dash__header">
+    <p class="eyebrow">Money Manager — updated Jul 29, 2026</p>
+    <h1>Your Ledger</h1>
+    <div class="totals">
+      <div class="totals__main">
+        <span class="totals__label">Cash on hand</span>
+        <span class="totals__value">$200<span class="cents">.00</span></span>
+      </div>
+      <p class="totals__sub">plus <strong>$60.00</strong> in your Roth IRA — kept separate below since retirement money isn't spendable cash</p>
+    </div>
+  </header>
+
+  <section class="accounts">
+    <article class="acct">
+      <div class="acct__top">
+        <span class="tag tag--cash">Cash</span>
+        <span class="acct__date">Jul 29</span>
+      </div>
+      <h2>Checking</h2>
+      <p class="acct__balance">$100<span class="cents">.00</span></p>
+      <p class="acct__note">−$20 Whataburger, auto-deducted</p>
+    </article>
+
+    <article class="acct">
+      <div class="acct__top">
+        <span class="tag tag--cash">Cash</span>
+        <span class="acct__date">Jul 29</span>
+      </div>
+      <h2>Savings</h2>
+      <p class="acct__balance">$100<span class="cents">.00</span></p>
+    </article>
+
+    <article class="acct acct--retirement">
+      <div class="acct__top">
+        <span class="tag tag--retirement">Retirement</span>
+        <span class="acct__date">Jul 29</span>
+      </div>
+      <h2>Roth IRA</h2>
+      <p class="acct__balance">$60<span class="cents">.00</span></p>
+      <p class="acct__note">Balance only — no 2026 contribution logged yet</p>
+    </article>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger__head">
+      <h2>Work Hours</h2>
+      <div class="wages">
+        <span class="wage-chip">Sports Center <strong>$19.00</strong>/hr</span>
+        <span class="wage-chip">Golf Course <strong>$16.90</strong>/hr + tips</span>
+      </div>
+    </div>
+    <div class="empty">
+      <p>No shifts logged yet.</p>
+      <p class="empty__hint">Tell me your hours (and tips, for golf) after a shift — I'll log the date and figure the pay.</p>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger__head">
+      <h2>Income</h2>
+    </div>
+    <div class="empty">
+      <p>No paychecks or other income logged yet.</p>
+      <p class="empty__hint">Tell me the amount and source when one comes in.</p>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger__head">
+      <h2>Spending</h2>
+    </div>
+    <table class="rows">
+      <thead>
+        <tr><th>Date</th><th>Category</th><th class="num">Amount</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">Jul 29</td>
+          <td><span class="tag tag--cash">Dining out</span></td>
+          <td class="num mono">$20.00</td>
+          <td>Whataburger</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger__head">
+      <h2>Budget — what's safe to spend</h2>
+    </div>
+    <div class="budget">
+      <p class="budget__basis">Based on essentials of $20/wk gas + $50/wk groceries, and income you gave as $260/pay (golf) + $250–$320/pay (Sports Center), paid biweekly.</p>
+      <div class="budget__grid">
+        <div class="budget__col">
+          <span class="budget__col-label">Low estimate</span>
+          <table class="rows rows--tight">
+            <tbody>
+              <tr><td>Income</td><td class="num mono">$510</td></tr>
+              <tr><td>− Essentials</td><td class="num mono">−$140</td></tr>
+              <tr><td>− Promise ring fund</td><td class="num mono">−$45</td></tr>
+              <tr class="rows--total"><td>Left to spend</td><td class="num mono">$325</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="budget__col">
+          <span class="budget__col-label">High estimate</span>
+          <table class="rows rows--tight">
+            <tbody>
+              <tr><td>Income</td><td class="num mono">$580</td></tr>
+              <tr><td>− Essentials</td><td class="num mono">−$140</td></tr>
+              <tr><td>− Promise ring fund</td><td class="num mono">−$45</td></tr>
+              <tr class="rows--total"><td>Left to spend</td><td class="num mono">$415</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="budget__result">≈ <strong>$160–$210/week</strong> safe for non-essentials, per pay period, before anything extra toward the $1,000 savings goal.</p>
+      <p class="empty__hint">This tightens up once you give me an actual Sports Center paycheck instead of a range.</p>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger__head">
+      <h2>Goals</h2>
+    </div>
+    <div class="goals">
+      <article class="goal">
+        <div class="goal__top">
+          <h3>Savings</h3>
+          <span class="goal__amounts mono">$100 <span class="goal__of">of</span> $1,000</span>
+        </div>
+        <div class="goal__bar"><div class="goal__bar-fill" style="width: 10%"></div></div>
+        <p class="acct__note">No deadline set.</p>
+      </article>
+      <article class="goal">
+        <div class="goal__top">
+          <h3>Promise ring</h3>
+          <span class="goal__amounts mono">$0 <span class="goal__of">of</span> $300</span>
+        </div>
+        <div class="goal__bar"><div class="goal__bar-fill" style="width: 0%"></div></div>
+        <p class="acct__note">Due October 2026 (assumed this year) — needs ~$45 saved per pay period to hit it.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="dash__foot">
+    <p>Every figure above is one you gave me — nothing here is estimated, projected, or assumed.</p>
+  </footer>
+
+</div>
+
+<style>
+:root{
+  --paper: #eeebe2;
+  --paper-raised: #f6f4ec;
+  --ink: #24271f;
+  --ink-soft: #5b6259;
+  --line: rgba(36, 39, 31, 0.14);
+  --moss: #3e6b52;
+  --moss-tint: rgba(62, 107, 82, 0.1);
+  --slate: #55606b;
+  --slate-tint: rgba(85, 96, 107, 0.1);
+  --gold: #a3792f;
+  --gold-tint: rgba(163, 121, 47, 0.12);
+
+  --font-display: Georgia, Cambria, "Times New Roman", serif;
+  --font-body: "Trebuchet MS", Verdana, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper: #1b1d18;
+    --paper-raised: #232620;
+    --ink: #eee9dc;
+    --ink-soft: #a7ab9f;
+    --line: rgba(238, 233, 220, 0.14);
+    --moss: #7cab8e;
+    --moss-tint: rgba(124, 171, 142, 0.14);
+    --slate: #9aa5af;
+    --slate-tint: rgba(154, 165, 175, 0.14);
+    --gold: #d3a855;
+    --gold-tint: rgba(211, 168, 85, 0.16);
+  }
+}
+:root[data-theme="dark"]{
+  --paper: #1b1d18;
+  --paper-raised: #232620;
+  --ink: #eee9dc;
+  --ink-soft: #a7ab9f;
+  --line: rgba(238, 233, 220, 0.14);
+  --moss: #7cab8e;
+  --moss-tint: rgba(124, 171, 142, 0.14);
+  --slate: #9aa5af;
+  --slate-tint: rgba(154, 165, 175, 0.14);
+  --gold: #d3a855;
+  --gold-tint: rgba(211, 168, 85, 0.16);
+}
+:root[data-theme="light"]{
+  --paper: #eeebe2;
+  --paper-raised: #f6f4ec;
+  --ink: #24271f;
+  --ink-soft: #5b6259;
+  --line: rgba(36, 39, 31, 0.14);
+  --moss: #3e6b52;
+  --moss-tint: rgba(62, 107, 82, 0.1);
+  --slate: #55606b;
+  --slate-tint: rgba(85, 96, 107, 0.1);
+  --gold: #a3792f;
+  --gold-tint: rgba(163, 121, 47, 0.12);
+}
+
+*{ box-sizing: border-box; }
+
+.dash{
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+.dash__header{
+  padding-bottom: 1.75rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow{
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+h1{
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 5vw, 2.5rem);
+  font-weight: 400;
+  margin: 0 0 1.25rem;
+  text-wrap: balance;
+}
+
+.totals__main{
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.totals__label{
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.totals__value{
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(2.4rem, 8vw, 3.4rem);
+  font-weight: 600;
+  color: var(--moss);
+  letter-spacing: -0.01em;
+}
+
+.totals__value .cents{
+  font-size: 0.5em;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.totals__sub{
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.totals__sub strong{
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.accounts{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 2.5rem;
+}
+
+.acct{
+  background: var(--paper-raised);
+  padding: 1.1rem 1.15rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.acct__top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.acct__date{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.tag{
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+}
+.tag--cash{ background: var(--slate-tint); color: var(--slate); }
+.tag--retirement{ background: var(--gold-tint); color: var(--gold); }
+
+.acct h2{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.05rem;
+  margin: 0.15rem 0 0;
+}
+
+.acct__balance{
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0.1rem 0 0;
+}
+
+.acct__balance .cents{ font-size: 0.6em; opacity: 0.75; }
+
+.acct__note{
+  margin: 0.15rem 0 0;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+
+.ledger{
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.ledger__head{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.ledger__head h2{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.wages{
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wage-chip{
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--moss-tint);
+  color: var(--moss);
+  padding: 0.28rem 0.6rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.wage-chip strong{ font-weight: 700; }
+
+.empty{
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  padding: 1.1rem 1.2rem;
+  background: var(--paper-raised);
+}
+
+.empty p{ margin: 0; }
+.empty p + p{ margin-top: 0.3rem; }
+
+.empty__hint{
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.rows{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.rows th{
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 500;
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.rows td{
+  padding: 0.55rem 0 0.55rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.rows tbody tr:last-child td{ border-bottom: none; }
+
+.rows .num{ text-align: right; }
+.mono{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.rows--tight th, .rows--tight td{ padding: 0.3rem 0; font-size: 0.88rem; border-bottom: none; }
+.rows--tight tr:not(:last-child) td{ border-bottom: 1px dashed var(--line); }
+.rows--total td{ font-weight: 700; color: var(--moss); padding-top: 0.5rem; }
+
+.budget__basis{
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.budget__grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.budget__col-label{
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.budget__result{
+  font-size: 1rem;
+  margin: 0 0 0.4rem;
+}
+
+.budget__result strong{
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--moss);
+}
+
+.goals{
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.goal__top{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.goal h3{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.goal__amounts{
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.goal__of{
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+  font-size: 0.8em;
+}
+
+.goal__bar{
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.goal__bar-fill{
+  height: 100%;
+  background: var(--moss);
+  border-radius: 3px;
+}
+
+@media (max-width: 560px){
+  .budget__grid{ grid-template-columns: 1fr; }
+}
+
+.dash__foot{
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.dash__foot p{
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 560px){
+  .accounts{ grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: no-preference){
+  .dash{ animation: rise 0.4s ease-out; }
+  @keyframes rise{
+    from{ opacity: 0; transform: translateY(6px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+}
+</style>
