@@ -9,10 +9,15 @@ Budget about 20–30 minutes the first time.
 2. Pick any name/password, wait ~2 min for it to spin up
 3. In the left sidebar, click **SQL Editor** → **New query**
 4. Open `supabase/schema.sql` in this folder, copy all of it, paste it in, click **Run**
-   - This creates the tables (profiles, groups, posts, messages), a private
-     `avatars` storage bucket for profile photos, and Row Level Security
-     policies that scope every read/write to the signed-in user — not just
-     "anyone with the link."
+   - This creates every table the app needs (profiles, groups, group posts,
+     messages, internships, saved internships, study requests, and study
+     request members), a private `avatars` storage bucket for profile
+     photos, Row Level Security policies that scope every read/write to the
+     signed-in user, a starter set of groups/internships/study requests so
+     the app isn't empty on day one, and Realtime so new messages and group
+     posts push to open tabs instantly instead of polling.
+   - It's safe to re-run this script any time (e.g. after pulling an update
+     to this repo) — every statement is written to skip work that's already done.
 5. In the left sidebar, click **Authentication → Providers**, confirm **Email**
    is enabled. This app signs people in with a passwordless magic link, so no
    further provider setup is needed.
@@ -48,8 +53,20 @@ Budget about 20–30 minutes the first time.
 
 Text or email people the Vercel link. The first time they open it, they'll
 enter their email, get a magic sign-in link, and set up their profile. Ask
-them to actually try posting in a group, messaging someone, and uploading a
+them to actually try posting in a group, creating a group of their own,
+messaging someone, posting an internship or study request, and uploading a
 profile photo — and to tell you what's confusing.
+
+## What's in the app
+
+- **Discover** — browse other students, filter by same school or shared interests.
+- **Groups** — join existing groups or create your own; each group has a live
+  discussion feed. The Internship Board and Study Buddy Board are just groups
+  with a special layout under the hood.
+- **Messages** — real-time direct messages (pushed via Supabase Realtime, not polling).
+- **Search** — the header search bar queries students, groups, internships,
+  and study requests at once.
+- **Profile** — edit your bio/school, and sign out.
 
 ## Good to know before you send it out
 
@@ -62,9 +79,8 @@ profile photo — and to tell you what's confusing.
 - **Profile photos are stored in Supabase Storage** (an `avatars` bucket),
   not embedded as base64 text in the database, so they won't bloat the
   database as more people join.
-- **Messages refresh every few seconds while a chat is open**, not instantly —
-  good enough for testing, not true real-time chat yet (a good next step is
-  Supabase Realtime subscriptions instead of polling).
+- **Messages and group posts arrive over Supabase Realtime**, not polling —
+  new messages show up the moment they're sent.
 - Want it to feel like an app on someone's phone? After they open the link,
   they can tap Share → **Add to Home Screen** (iOS Safari) or the equivalent
-  in Chrome — it'll launch full-screen with an icon, no App Store needed.
+  in Chrome — it installs with its own icon and name, no App Store needed.
