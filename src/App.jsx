@@ -30,25 +30,45 @@ export default function CollegeConnect() {
     let active = true;
 
     const resolveSession = async (session) => {
-      if (!session) {
-        if (active) { setProfile(null); setUserId(null); setStage("auth"); }
-        return;
-      }
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
-      if (!active) return;
-      if (data && !error) {
-        setProfile(data);
-        setStage("app");
-      } else {
-        setUserId(session.user.id);
-        setStage((s) => (s === "app" || s === "restoring" ? "map" : s));
+      try {
+        if (!session) {
+          if (active) { setProfile(null); setUserId(null); setStage("auth"); }
+          return;
+        }
+        const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+        if (!active) return;
+        if (data && !error) {
+          setProfile(data);
+          setStage("app");
+        } else {
+          setUserId(session.user.id);
+          setStage((s) => (s === "app" || s === "restoring" ? "map" : s));
+        }
+      } catch (err) {
+        // Anything unexpected here (a thrown error, not just a Supabase
+        // {error} response) used to leave the app stuck on the "Loading..."
+        // spinner forever, since nothing ever called setStage again. Fall
+        // back to the sign-in screen instead of hanging silently.
+        console.error("Failed to resolve session:", err);
+        if (active) setStage("auth");
       }
     };
 
-    supabase.auth.getSession().then(({ data }) => resolveSession(data.session));
+    supabase.auth.getSession()
+      .then(({ data }) => resolveSession(data.session))
+      .catch((err) => {
+        console.error("getSession failed:", err);
+        if (active) setStage("auth");
+      });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => resolveSession(session));
 
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    // Belt-and-suspenders: if something hangs without ever throwing (e.g. a
+    // stalled network request), don't leave the screen spinning forever.
+    const timeout = setTimeout(() => {
+      setStage((s) => (s === "restoring" ? "auth" : s));
+    }, 10000);
+
+    return () => { active = false; listener.subscription.unsubscribe(); clearTimeout(timeout); };
   }, []);
 
   const connectWith = (person) => { setPendingChatWith(person); setQuery(""); setTab("messages"); };
