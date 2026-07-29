@@ -101,6 +101,18 @@ create table if not exists study_request_members (
   primary key (request_id, profile_id)
 );
 
+-- One-time $1.99 unlock, paid before a profile exists -- so this references
+-- auth.users directly, not profiles. Only the Stripe webhook (via the
+-- service_role key, which bypasses RLS) ever writes to this table; see the
+-- RLS section below for why that's what makes the paywall real rather than
+-- a client-side-only speed bump.
+create table if not exists payments (
+  profile_id uuid primary key references auth.users(id) on delete cascade,
+  stripe_session_id text not null,
+  amount_cents int not null,
+  paid_at timestamptz default now()
+);
+
 -- If group_members/group_posts already exist from a previous version of this
 -- script (without the groups(id) foreign key), add it now rather than
 -- recreating the tables.
@@ -165,6 +177,7 @@ alter table internships enable row level security;
 alter table saved_internships enable row level security;
 alter table study_requests enable row level security;
 alter table study_request_members enable row level security;
+alter table payments enable row level security;
 
 -- Real, per-user security: every policy below requires a signed-in Supabase Auth
 -- session (auth.uid()) and scopes writes to rows the caller actually owns.
@@ -186,10 +199,21 @@ drop policy if exists "own insert group_members" on group_members;
 drop policy if exists "own delete group_members" on group_members;
 
 -- Any signed-in user can see every profile (that's what powers Discover), but
--- you can only create or edit the profile row that matches your own auth id.
+-- you can only create or edit the profile row that matches your own auth id --
+-- and creating one requires a completed payment to already exist for you.
+-- This is what makes the $1.99 unlock a real paywall instead of a UI-only
+-- gate someone could skip by calling the API directly.
+drop policy if exists "own insert profile" on profiles;
 create policy "authenticated read profiles" on profiles for select to authenticated using (true);
-create policy "own insert profile" on profiles for insert to authenticated with check (auth.uid() = id);
+create policy "own insert profile" on profiles for insert to authenticated
+  with check (auth.uid() = id and exists (select 1 from payments p where p.profile_id = auth.uid()));
 create policy "own update profile" on profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
+
+-- Payments are written only by the Stripe webhook using the service_role key
+-- (which bypasses RLS entirely) -- there is deliberately no insert/update/
+-- delete policy for the authenticated role here, so a signed-in user cannot
+-- mark themselves as paid by calling the API directly.
+create policy "own read payments" on payments for select to authenticated using (auth.uid() = profile_id);
 
 -- Any signed-in user can browse and create groups; only the creator can
 -- update/delete their own group (no UI for that yet, but the policy is ready).
