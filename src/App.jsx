@@ -7,6 +7,7 @@ import { NAV } from "./data/constants";
 import { ConfigNeeded } from "./onboarding/ConfigNeeded";
 import { AuthScreen } from "./onboarding/AuthScreen";
 import { MapIntro } from "./onboarding/MapIntro";
+import { Paywall } from "./onboarding/Paywall";
 import { Welcome } from "./onboarding/Welcome";
 import { ProfileSetup } from "./onboarding/ProfileSetup";
 import { Discover } from "./panels/Discover";
@@ -16,7 +17,7 @@ import { Profile } from "./panels/Profile";
 import { SearchResults } from "./panels/SearchResults";
 
 export default function CollegeConnect() {
-  const [stage, setStage] = useState("restoring"); // restoring -> auth -> map -> welcome -> setup -> app
+  const [stage, setStage] = useState("restoring"); // restoring -> auth -> map -> paywall -> welcome -> setup -> app
   const [school, setSchool] = useState("");
   const [userId, setUserId] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -41,7 +42,12 @@ export default function CollegeConnect() {
         setStage("app");
       } else {
         setUserId(session.user.id);
-        setStage((s) => (s === "app" || s === "restoring" ? "map" : s));
+        // A school in the URL means we're either resuming after a Stripe
+        // checkout redirect, or a page reload mid-paywall -- either way,
+        // skip re-picking the school and go straight back to the paywall.
+        const schoolFromUrl = new URLSearchParams(window.location.search).get("school");
+        if (schoolFromUrl) setSchool(schoolFromUrl);
+        setStage((s) => (s === "app" || s === "restoring" ? (schoolFromUrl ? "paywall" : "map") : s));
       }
     };
 
@@ -65,7 +71,8 @@ export default function CollegeConnect() {
     );
   }
   if (stage === "auth") return <AuthScreen />;
-  if (stage === "map") return <MapIntro onDone={(s) => { setSchool(s); setStage("welcome"); }} />;
+  if (stage === "map") return <MapIntro onDone={(s) => { setSchool(s); setStage("paywall"); }} />;
+  if (stage === "paywall") return <Paywall school={school} userId={userId} onPaid={() => setStage("welcome")} />;
   if (stage === "welcome") return <Welcome school={school} onNext={() => setStage("setup")} />;
   if (stage === "setup") return <ProfileSetup school={school} userId={userId} onComplete={(p) => { setProfile(p); setStage("app"); }} />;
 

@@ -49,7 +49,42 @@ Budget about 20–30 minutes the first time.
    **Site URL** / **Redirect URLs** to that real Vercel link, so magic-link
    emails send people to the right place.
 
-## 4. Invite real testers
+## 4. Charge $1.99 to unlock (Stripe)
+
+Right after someone picks their school, they're asked to pay a one-time $1.99
+before they can create a profile — enforced by the database itself (a Row
+Level Security policy requires a completed payment to exist before a profile
+can be inserted), not just a screen someone could skip past.
+
+1. Go to stripe.com → sign up (this one needs real identity/bank info since
+   it's collecting actual money — budget a few extra minutes here)
+2. Stay in **Test mode** for now (toggle top-right) so you can rehearse the
+   flow with fake cards before charging anyone for real
+3. **Product catalog → Add product** → name it whatever you like → set a
+   one-time price of **$1.99** → save → copy the **Price ID** (`price_...`)
+4. **Developers → API keys** → copy the **Secret key** (`sk_test_...`)
+5. Back in Vercel, **Project Settings → Environment Variables**, add:
+   - `STRIPE_SECRET_KEY` → the secret key from step 4
+   - `STRIPE_PRICE_ID` → the price ID from step 3
+   - `SUPABASE_SERVICE_ROLE_KEY` → from Supabase **Project Settings → API
+     Keys**, the **Secret keys** section (the one you were told to avoid
+     earlier — it's needed here, but only as a server-side Vercel variable
+     that's never sent to anyone's browser)
+6. **Redeploy** the Vercel project so those variables take effect
+7. Back in Stripe: **Developers → Webhooks → Add endpoint** → URL:
+   `https://your-vercel-link.vercel.app/api/stripe-webhook` → select event
+   **checkout.session.completed** → **Add endpoint**
+8. Click into that new endpoint, reveal the **Signing secret** (`whsec_...`),
+   add it to Vercel as `STRIPE_WEBHOOK_SECRET`, and **redeploy** once more
+9. Test it: on your deployed link, pick a school, and pay with Stripe's test
+   card `4242 4242 4242 4242`, any future expiry date, any CVC — you should
+   land back in the app with your profile unlocked
+10. When you're ready to take real money: flip Stripe out of Test mode, and
+    swap `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, and the webhook (Stripe uses
+    separate keys/products/webhooks for live vs. test mode) for their live
+    equivalents
+
+## 5. Invite real testers
 
 Text or email people the Vercel link. The first time they open it, they'll
 enter their email, get a magic sign-in link, and set up their profile. Ask
@@ -59,6 +94,8 @@ profile photo — and to tell you what's confusing.
 
 ## What's in the app
 
+- **Paywall** — a one-time $1.99 unlock via Stripe Checkout, required before
+  a profile can be created (enforced in the database, not just the UI).
 - **Discover** — browse other students, filter by same school or shared interests.
 - **Groups** — join existing groups or create your own; each group has a live
   discussion feed. The Internship Board and Study Buddy Board are just groups
@@ -81,6 +118,10 @@ profile photo — and to tell you what's confusing.
   database as more people join.
 - **Messages and group posts arrive over Supabase Realtime**, not polling —
   new messages show up the moment they're sent.
+- **Refunds are entirely manual for now** — there's no in-app refund flow,
+  so if you need to refund someone, do it from the Stripe dashboard
+  (**Payments** → find the charge → **Refund**). Consider whether you need a
+  simple refund/terms policy before charging strangers, even at $1.99.
 - Want it to feel like an app on someone's phone? After they open the link,
   they can tap Share → **Add to Home Screen** (iOS Safari) or the equivalent
   in Chrome — it installs with its own icon and name, no App Store needed.
