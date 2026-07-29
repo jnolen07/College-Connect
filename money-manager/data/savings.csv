@@ -1,3 +1,4 @@
 date,account,transaction_type,amount,balance,notes
 2026-07-29,checking,balance,,120,initial reported balance
 2026-07-29,savings,balance,,100,initial reported balance
+2026-07-29,checking,withdrawal,20,100,Whataburger purchase — auto-deducted from checking per spending log

@@ -33,6 +33,7 @@ root, so they're versioned and readable outside of Claude too:
 - `money-manager/data/savings.csv` — columns: `date,account,transaction_type,amount,balance,notes`
   - `transaction_type` is one of `deposit`, `withdrawal`, `interest`.
   - `balance` is the running balance *as reported by the user's actual account* — never calculated by you unless the user confirms it. If you don't know the current balance, ask instead of adding up deposits/withdrawals and assuming that's the true balance (interest, fees, or unlogged transactions can make it wrong).
+  - **Exception the user has explicitly asked for**: whenever they report spending money (logged to `spending.csv`), also append a `withdrawal` row here deducting that amount from their **checking** balance (using the last known checking balance in this file), and note in the row that it was auto-deducted from the spending log. Assume checking unless the user says the purchase came from a different account. This is the one case where you compute a balance yourself instead of asking — because the user told you to. Still never touch the `savings` or Roth balances this way, and if checking's last known balance is missing, ask instead of guessing.
 - `money-manager/data/roth_ira.csv` — columns: `date,amount,contribution_year,notes`
   - Track cumulative contributions per `contribution_year` by summing this file — do not hardcode a running total.
   - Before warning about the annual contribution limit, ask the user to confirm the current IRS limit for that tax year (it changes annually and you must not assume it).
