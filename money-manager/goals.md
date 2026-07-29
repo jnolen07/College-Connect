@@ -2,10 +2,14 @@
 
 Add one entry per goal. Update progress as you log savings/contributions.
 
-<!--
-## Example goal (delete once you add real ones)
-- **Target**: $2,000
-- **Deadline**: 2026-12-01
+## Savings
+- **Target**: $1,000
+- **Deadline**: none set
+- **Progress**: $100 (current savings account balance)
+- **Notes**: General savings goal.
+
+## Promise ring
+- **Target**: $300
+- **Deadline**: October 2026 (assumed current year — confirm if you meant a different October)
 - **Progress**: $0
-- **Notes**: Emergency fund before end of year
--->
+- **Notes**: No dedicated funds set aside yet.
