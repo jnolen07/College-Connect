@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
-import { supabase } from "./supabaseClient";
+import { supabase, supabaseConfigured } from "./supabaseClient";
 import { T, display, mono } from "./theme";
 import { Avatar } from "./components/ui";
 import { NAV } from "./data/constants";
+import { ConfigNeeded } from "./onboarding/ConfigNeeded";
 import { AuthScreen } from "./onboarding/AuthScreen";
 import { MapIntro } from "./onboarding/MapIntro";
 import { Welcome } from "./onboarding/Welcome";
@@ -25,6 +26,7 @@ export default function CollegeConnect() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (!supabaseConfigured) return;
     let active = true;
 
     const resolveSession = async (session) => {
@@ -52,6 +54,8 @@ export default function CollegeConnect() {
   const connectWith = (person) => { setPendingChatWith(person); setQuery(""); setTab("messages"); };
   const openGroup = (groupId) => { setPendingOpenGroupId(groupId); setQuery(""); setTab("groups"); };
   const goToTab = (id) => { setTab(id); setQuery(""); };
+
+  if (!supabaseConfigured) return <ConfigNeeded />;
 
   if (stage === "restoring") {
     return (
