@@ -101,6 +101,20 @@ create table if not exists study_request_members (
   primary key (request_id, profile_id)
 );
 
+-- Sport Mode: one row per user holding their favorite sport, followed teams,
+-- and followed players. teams/players are stored as jsonb (not separate
+-- tables) because they're just a denormalized cache of ESPN's public API
+-- (id/name/logo) used to render the picker without refetching rosters every
+-- visit -- there's no relational data here to normalize.
+create table if not exists sports_preferences (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  league text,
+  teams jsonb not null default '[]',
+  players jsonb not null default '[]',
+  onboarded boolean not null default false,
+  updated_at timestamptz default now()
+);
+
 -- If group_members/group_posts already exist from a previous version of this
 -- script (without the groups(id) foreign key), add it now rather than
 -- recreating the tables.
@@ -165,6 +179,7 @@ alter table internships enable row level security;
 alter table saved_internships enable row level security;
 alter table study_requests enable row level security;
 alter table study_request_members enable row level security;
+alter table sports_preferences enable row level security;
 
 -- Real, per-user security: every policy below requires a signed-in Supabase Auth
 -- session (auth.uid()) and scopes writes to rows the caller actually owns.
@@ -226,6 +241,17 @@ create policy "own insert study_requests" on study_requests for insert to authen
 create policy "authenticated read study_request_members" on study_request_members for select to authenticated using (true);
 create policy "own insert study_request_members" on study_request_members for insert to authenticated with check (auth.uid() = profile_id);
 create policy "own delete study_request_members" on study_request_members for delete to authenticated using (auth.uid() = profile_id);
+
+-- Sport Mode preferences are private to the user who set them.
+drop policy if exists "own read sports_preferences" on sports_preferences;
+drop policy if exists "own insert sports_preferences" on sports_preferences;
+drop policy if exists "own update sports_preferences" on sports_preferences;
+drop policy if exists "own delete sports_preferences" on sports_preferences;
+
+create policy "own read sports_preferences" on sports_preferences for select to authenticated using (auth.uid() = profile_id);
+create policy "own insert sports_preferences" on sports_preferences for insert to authenticated with check (auth.uid() = profile_id);
+create policy "own update sports_preferences" on sports_preferences for update to authenticated using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
+create policy "own delete sports_preferences" on sports_preferences for delete to authenticated using (auth.uid() = profile_id);
 
 -- ---------------------------------------------------------------------------
 -- Storage: profile photos live in Supabase Storage instead of being embedded

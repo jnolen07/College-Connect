@@ -64,6 +64,11 @@ profile photo — and to tell you what's confusing.
   discussion feed. The Internship Board and Study Buddy Board are just groups
   with a special layout under the hood.
 - **Messages** — real-time direct messages (pushed via Supabase Realtime, not polling).
+- **Sport Mode** — pick a favorite sport, follow specific teams, and (optionally) follow
+  specific players. Every visit checks that day's games for your teams and shows
+  real stats and scores, pulled live from ESPN's public scoreboard/box-score API
+  (no API key needed), broken out by stat category (passing/rushing/receiving,
+  batting/pitching, etc. depending on the sport).
 - **Search** — the header search bar queries students, groups, internships,
   and study requests at once.
 - **Profile** — edit your bio/school, and sign out.
