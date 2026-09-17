@@ -12,6 +12,7 @@ import { ProfileSetup } from "./onboarding/ProfileSetup";
 import { Discover } from "./panels/Discover";
 import { Groups } from "./panels/Groups";
 import { Messages } from "./panels/Messages";
+import { Sports } from "./panels/Sports";
 import { Profile } from "./panels/Profile";
 import { SearchResults } from "./panels/SearchResults";
 
@@ -96,6 +97,7 @@ export default function CollegeConnect() {
         discover: <Discover profile={profile} onConnect={connectWith} />,
         groups: <Groups profile={profile} pendingOpenGroupId={pendingOpenGroupId} onConsumePendingOpen={() => setPendingOpenGroupId(null)} />,
         messages: <Messages profile={profile} pendingChatWith={pendingChatWith} onConsumePending={() => setPendingChatWith(null)} />,
+        sports: <Sports profile={profile} />,
         profile: <Profile profile={profile} onUpdate={setProfile} />,
       }[tab];
 

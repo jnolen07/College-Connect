@@ -1,5 +1,5 @@
 import {
-  Users, MessageCircle, User, Compass,
+  Users, MessageCircle, User, Compass, Trophy,
   Dumbbell, Music, Palette, Gamepad2, Brain, Coffee,
 } from "lucide-react";
 
@@ -7,6 +7,7 @@ export const NAV = [
   { id: "discover", label: "Discover", icon: Compass },
   { id: "groups", label: "Groups", icon: Users },
   { id: "messages", label: "Messages", icon: MessageCircle },
+  { id: "sports", label: "Sport Mode", icon: Trophy },
   { id: "profile", label: "Profile", icon: User },
 ];
 
