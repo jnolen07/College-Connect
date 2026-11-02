@@ -2,4 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-zinc-950 text-zinc-100 antialiased; }
+:root { --gold-1: #7a5718; --gold-2: #d4a73c; --gold-3: #fff1bf; }
+html, body { background: #000; }
+body { @apply text-zinc-100 antialiased; font-family: Inter, system-ui, sans-serif; }
+
+.font-display { font-family: Cinzel, Georgia, serif; }
+
+/* Gold metallic text with a moving shine */
+.gold-text {
+  background: linear-gradient(105deg, var(--gold-1) 0%, var(--gold-2) 28%, var(--gold-3) 44%, var(--gold-2) 58%, var(--gold-1) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 5s linear infinite;
+}
+.gold-static { color: #e3b74a; }
+@keyframes shine { from { background-position: 125% 0; } to { background-position: -125% 0; } }
+
+/* ---------- Intro stage ---------- */
+.intro { position: fixed; inset: 0; background: #000; overflow: hidden; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; }
+/* Cone of light from above */
+.intro .beam { position: absolute; top: -10%; left: 50%; width: 110vmin; height: 95vh; transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgba(255, 226, 160, .30), rgba(255, 210, 120, .06) 65%, transparent 85%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%); filter: blur(18px); opacity: 0;
+  animation: beamOn 1.2s .2s ease-out forwards, flicker 6s 1.6s ease-in-out infinite; }
+/* Pool of light that sweeps across the word */
+.intro .spot { position: absolute; width: 70vmin; height: 70vmin; border-radius: 50%; top: 50%; left: 50%;
+  background: radial-gradient(circle, rgba(255, 228, 160, .30) 0%, rgba(255, 200, 100, .10) 35%, transparent 65%);
+  transform: translate(-50%, -50%); mix-blend-mode: screen; opacity: 0;
+  animation: beamOn 1s .6s ease-out forwards, sweep 7s 1.6s ease-in-out infinite alternate; }
+.intro .floor { position: absolute; left: 50%; top: 62%; width: 80vmin; height: 10vmin; transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(255, 210, 120, .18), transparent 70%); filter: blur(6px); opacity: 0;
+  animation: beamOn 1.2s .8s ease-out forwards; }
+.intro .word { position: relative; font-size: clamp(2.75rem, 13vw, 8.5rem); font-weight: 800; letter-spacing: .02em;
+  filter: drop-shadow(0 0 28px rgba(255, 200, 90, .35)); opacity: 0;
+  animation: reveal 1.6s .5s cubic-bezier(.2, .7, .2, 1) forwards, shine 5s 2s linear infinite; }
+.intro .tag { position: relative; margin-top: .75rem; color: rgba(255, 236, 190, .7); letter-spacing: .25em;
+  text-transform: uppercase; font-size: clamp(.65rem, 2.4vw, .85rem); opacity: 0; animation: fadeUp .8s 1.6s forwards; }
+.intro .next { position: relative; margin-top: 3rem; opacity: 0; animation: fadeUp .8s 2.1s forwards; }
+
+.btn-gold { border: 1px solid #c9a03d; color: #f3d690; border-radius: 9999px; padding: .8rem 2.6rem; letter-spacing: .2em;
+  text-transform: uppercase; font-weight: 600; font-size: .85rem; transition: all .25s; background: rgba(0, 0, 0, .4); }
+.btn-gold:hover, .btn-gold:focus-visible { background: linear-gradient(105deg, #b8892c, #f1d27f, #b8892c); color: #000;
+  box-shadow: 0 0 30px rgba(241, 210, 127, .45); outline: none; }
+.btn-gold:disabled { opacity: .35; pointer-events: none; }
+
+@keyframes beamOn { to { opacity: 1; } }
+@keyframes flicker { 0%, 100% { opacity: 1; } 48% { opacity: .85; } 52% { opacity: .95; } }
+@keyframes sweep { from { transform: translate(-95%, -52%); } to { transform: translate(-5%, -48%); } }
+@keyframes reveal { from { opacity: 0; letter-spacing: .3em; filter: blur(14px); }
+  to { opacity: 1; letter-spacing: .02em; filter: blur(0) drop-shadow(0 0 28px rgba(255, 200, 90, .35)); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .intro *, .gold-text { animation-duration: .01s !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; }
+}

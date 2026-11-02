@@ -6,15 +6,16 @@ you pay for** first, so you don't have to sign up for anything new.
 
 ## What it does
 
-- **Pick your services once** (Netflix, Hulu, Max, Prime Video, Disney+, … — the full list
-  for your country). Saved in your browser, no account needed.
-- **Search any movie or TV show**, or start from what's trending.
-- **Get recommendations** split into *On your services* and *Not on your services*
-  (with which service has it, in case it's worth it).
-- **Tap any result** to get recommendations based on that one instead — keep going down
-  the rabbit hole.
-- **"Seen it"** hides titles you've already watched.
-- Every recommendation page has its own link (e.g. `/#/tv/1396`) you can send to a friend.
+1. **Intro**: black screen, gold "ShowFinder" under a moving spotlight → **Next**.
+2. **Pick your services**: the top 10 (Netflix, Prime Video, Disney+, HBO Max, Hulu,
+   Peacock, Paramount+, Apple TV, Crunchyroll, Tubi) with their real logos. Select as many as you use.
+3. **What have you watched?**: search shows/movies and rate them ❤️ Loved / 👍 Liked / 👎 Not for me.
+4. **Picks for you**: recommendations blended from everything you loved/liked, with
+   *On your services* first. Each card says which service it's on and which of your shows it's like.
+5. **Search** any title for "more like this", and **My shows** to see/change what you've rated.
+   Rate anything from any page with **Seen it?** and it drops out of your recommendations.
+
+Everything you pick is saved in your browser — no account needed.
 
 ## How recommendations work
 
@@ -46,6 +47,12 @@ The logic lives in `src/tmdb.js` → `recommend()` if you want to tweak it.
 
 3. **Deploy on Vercel**: New Project → import this repo → set **Root Directory** to
    `show-finder` → add the environment variable `VITE_TMDB_API_KEY` → Deploy.
+
+No key set on the server? The site asks for one on first use and saves it in that browser,
+so you can also just paste it there.
+
+Logos: bundled brand marks from Simple Icons; Disney+ and Peacock load their official site
+icons at runtime (with a text fallback). The service list lives in `src/services.js`.
 
 Note: the key ends up in the browser bundle. TMDB keys are read-only and this is a common
 setup for TMDB apps, but if you ever want to hide it, move the calls in `src/tmdb.js` behind a

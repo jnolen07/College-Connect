@@ -3,12 +3,35 @@
 
 const BASE = 'https://api.themoviedb.org/3'
 export const IMG = 'https://image.tmdb.org/t/p'
-const KEY = import.meta.env.VITE_TMDB_API_KEY || ''
+import { serviceFor, serviceById } from './services.js'
 
+// Key comes from the build (VITE_TMDB_API_KEY) or, if missing, one pasted into the site itself.
+const LS_KEY = 'showfinder:tmdbKey'
+let KEY = import.meta.env.VITE_TMDB_API_KEY || readStoredKey()
+function readStoredKey() {
+  try {
+    return localStorage.getItem(LS_KEY) || ''
+  } catch {
+    return ''
+  }
+}
 export const hasKey = () => Boolean(KEY)
+export async function setKey(k) {
+  const prev = KEY
+  KEY = k.trim()
+  try {
+    await get('/configuration')
+  } catch (e) {
+    KEY = prev
+    throw e
+  }
+  try {
+    localStorage.setItem(LS_KEY, KEY)
+  } catch {}
+}
 
 // A v4 "Read Access Token" is a JWT (starts with eyJ); a v3 key is a short hex string.
-const isBearer = KEY.startsWith('eyJ')
+const isBearer = () => KEY.startsWith('eyJ')
 
 const cache = new Map()
 
@@ -17,12 +40,12 @@ async function get(path, params = {}) {
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v)
   }
-  if (!isBearer) url.searchParams.set('api_key', KEY)
+  if (!isBearer()) url.searchParams.set('api_key', KEY)
   const cacheKey = url.toString()
   if (cache.has(cacheKey)) return cache.get(cacheKey)
 
   const promise = fetch(url, {
-    headers: isBearer ? { Authorization: `Bearer ${KEY}` } : {},
+    headers: isBearer() ? { Authorization: `Bearer ${KEY}` } : {},
   }).then(async (res) => {
     if (!res.ok) {
       cache.delete(cacheKey)
@@ -70,30 +93,6 @@ export async function trending() {
     .map((r) => normalize(r))
 }
 
-// All streaming services TMDB knows about in a region (movie + tv lists merged).
-export async function listProviders(region) {
-  const [m, t] = await Promise.all([
-    get('/watch/providers/movie', { watch_region: region }),
-    get('/watch/providers/tv', { watch_region: region }),
-  ])
-  const byId = new Map()
-  for (const p of [...m.results, ...t.results]) {
-    const prio = p.display_priorities?.[region] ?? p.display_priority ?? 999
-    const prev = byId.get(p.provider_id)
-    if (!prev || prio < prev.priority) {
-      byId.set(p.provider_id, { id: p.provider_id, name: p.provider_name, logo: p.logo_path, priority: prio })
-    }
-  }
-  return [...byId.values()].sort((a, b) => a.priority - b.priority)
-}
-
-export async function listRegions() {
-  const data = await get('/watch/providers/regions')
-  return data.results
-    .map((r) => ({ code: r.iso_3166_1, name: r.english_name }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-}
-
 // Where a single title streams in a region.
 // Returns { included: [...providers], rent: [...], buy: [...], link }
 export async function whereToWatch(type, id, region) {
@@ -119,29 +118,36 @@ export async function details(type, id) {
 
 // ---------- recommendations ----------
 
-/**
- * Find titles similar to `seed`, ranked, with availability on the user's services.
- *
- * Strategy:
- *  1. Pull TMDB's own "recommendations" + "similar" lists (what people who liked X also liked).
- *  2. Back-fill with a Discover query: same genres + keywords, restricted to the user's
- *     services, so there's always something they can actually watch without paying more.
- *  3. Score everything, look up where each streams, and split into
- *     "on your services" vs. "elsewhere".
- */
-export async function recommend(seed, { region, providerIds }) {
+const providerIdsFor = (serviceIds) => serviceIds.flatMap((id) => serviceById[id]?.tmdbIds || [])
+
+// Which of the user's services carry this title (from a whereToWatch result).
+export function myServicesFor(where, serviceIds) {
+  const mine = new Set(serviceIds)
+  const found = new Map()
+  for (const p of where.included) {
+    const s = serviceFor(p)
+    if (s && mine.has(s.id)) found.set(s.id, s)
+  }
+  return [...found.values()]
+}
+
+// Score candidates similar to one seed. Returns Map(key -> candidate).
+async function candidatesFor(seed, { region, serviceIds }, weight = 1) {
   const { type, id } = seed
   const info = await details(type, id)
   const seedGenres = new Set((info.genres || []).map((g) => g.id))
   const keywordList = info.keywords?.keywords || info.keywords?.results || []
   const topKeywords = keywordList.slice(0, 6).map((k) => k.id)
+  const providerIds = providerIdsFor(serviceIds)
 
+  const none = { results: [] }
   const [rec1, rec2, sim] = await Promise.all([
-    get(`/${type}/${id}/recommendations`, { page: 1 }),
-    get(`/${type}/${id}/recommendations`, { page: 2 }).catch(() => ({ results: [] })),
-    get(`/${type}/${id}/similar`, { page: 1 }).catch(() => ({ results: [] })),
+    get(`/${type}/${id}/recommendations`, { page: 1 }).catch(() => none),
+    get(`/${type}/${id}/recommendations`, { page: 2 }).catch(() => none),
+    get(`/${type}/${id}/similar`, { page: 1 }).catch(() => none),
   ])
 
+  // Discover = same genres / same themes, but ONLY on the user's services.
   const discoverBase = {
     watch_region: region,
     with_watch_providers: providerIds.join('|'),
@@ -149,63 +155,93 @@ export async function recommend(seed, { region, providerIds }) {
     sort_by: 'vote_average.desc',
     'vote_count.gte': type === 'tv' ? 100 : 300,
   }
-  const discoverCalls = providerIds.length
-    ? [
-        // genre match (TMDB treats comma as AND, so this is "all the same genres")
-        get(`/discover/${type}`, { ...discoverBase, with_genres: [...seedGenres].slice(0, 3).join(',') }),
-        // keyword/theme match (pipe = OR)
+  const discovered = providerIds.length
+    ? await Promise.all([
+        get(`/discover/${type}`, { ...discoverBase, with_genres: [...seedGenres].slice(0, 3).join(',') }).catch(() => none),
         topKeywords.length
-          ? get(`/discover/${type}`, { ...discoverBase, with_keywords: topKeywords.join('|'), sort_by: 'popularity.desc' })
-          : Promise.resolve({ results: [] }),
-      ].map((p) => p.catch(() => ({ results: [] })))
+          ? get(`/discover/${type}`, { ...discoverBase, with_keywords: topKeywords.join('|'), sort_by: 'popularity.desc' }).catch(() => none)
+          : none,
+      ])
     : []
-  const discovered = await Promise.all(discoverCalls)
 
-  // Score: being in TMDB's recommendation list counts most; genre overlap and quality break ties.
   const pool = new Map()
-  const add = (items, weight, source) => {
+  const add = (items, w) => {
     items.forEach((raw, i) => {
       if (raw.id === id) return
       const t = normalize(raw, type)
-      const entry = pool.get(t.id) || { ...t, score: 0, sources: new Set() }
-      entry.score += weight * (1 - i / 40)
-      entry.sources.add(source)
-      pool.set(t.id, entry)
+      const key = `${t.type}:${t.id}`
+      const entry = pool.get(key) || { ...t, score: 0, because: new Set() }
+      entry.score += weight * w * (1 - i / 40)
+      entry.because.add(seed.title || info.title || info.name)
+      pool.set(key, entry)
     })
   }
-  add([...rec1.results, ...rec2.results], 3, 'rec')
-  add(sim.results, 1.5, 'similar')
-  discovered.forEach((d, i) => add(d.results, i === 0 ? 1.2 : 1.6, 'discover'))
+  add([...rec1.results, ...rec2.results], 3)
+  add(sim.results, 1.5)
+  discovered.forEach((d, i) => add(d.results, i === 0 ? 1.2 : 1.6))
 
   for (const e of pool.values()) {
     const overlap = e.genreIds.filter((g) => seedGenres.has(g)).length
-    e.score += overlap * 0.6
-    e.score += (e.rating / 10) * Math.min(1, e.votes / 500)
-    if (e.votes < 30) e.score -= 2 // filter out obscure noise
+    e.score += weight * overlap * 0.6
   }
+  return { pool, info }
+}
 
-  const ranked = [...pool.values()].sort((a, b) => b.score - a.score).slice(0, 40)
-
-  // Look up availability for each candidate (cached; TMDB rate limits are generous).
-  const withProviders = await Promise.all(
+async function placeOnServices(ranked, { region, serviceIds }) {
+  const withWhere = await Promise.all(
     ranked.map(async (t) => {
       try {
-        const where = await whereToWatch(t.type, t.id, region)
-        return { ...t, where }
+        return { ...t, where: await whereToWatch(t.type, t.id, region) }
       } catch {
         return { ...t, where: { included: [], rent: [], buy: [] } }
       }
     }),
   )
-
-  const mine = new Set(providerIds)
   const onYours = []
   const elsewhere = []
-  for (const t of withProviders) {
-    t.yourServices = t.where.included.filter((p) => mine.has(p.id))
-    t.sources = [...t.sources]
-    if (t.yourServices.length) onYours.push(t)
-    else elsewhere.push(t)
+  for (const t of withWhere) {
+    t.yourServices = myServicesFor(t.where, serviceIds)
+    t.because = [...t.because]
+    ;(t.yourServices.length ? onYours : elsewhere).push(t)
   }
-  return { seed: { ...seed, genres: info.genres || [] }, onYours, elsewhere }
+  return { onYours, elsewhere }
+}
+
+function finalize(pool, exclude) {
+  for (const e of pool.values()) {
+    e.score += (e.rating / 10) * Math.min(1, e.votes / 500)
+    if (e.votes < 30) e.score -= 2 // obscure noise
+    if (e.because.size > 1) e.score += e.because.size // similar to several things you love
+  }
+  return [...pool.values()]
+    .filter((e) => !exclude.has(`${e.type}:${e.id}`))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 40)
+}
+
+/** "Because you liked X" — recommendations from one title. */
+export async function recommend(seed, { region, serviceIds, exclude = new Set() }) {
+  const { pool, info } = await candidatesFor(seed, { region, serviceIds })
+  const placed = await placeOnServices(finalize(pool, exclude), { region, serviceIds })
+  return { seed: { ...seed, genres: info.genres || [] }, ...placed }
+}
+
+/** "For you" — blends recommendations from several titles you loved/liked. */
+export async function recommendForYou(seeds, { region, serviceIds, exclude = new Set() }) {
+  const results = await Promise.all(
+    seeds.map((s) => candidatesFor(s, { region, serviceIds }, s.weight || 1).catch(() => null)),
+  )
+  const pool = new Map()
+  for (const r of results) {
+    if (!r) continue
+    for (const [key, c] of r.pool) {
+      const prev = pool.get(key)
+      if (!prev) pool.set(key, { ...c, because: new Set(c.because) })
+      else {
+        prev.score += c.score
+        c.because.forEach((b) => prev.because.add(b))
+      }
+    }
+  }
+  return placeOnServices(finalize(pool, exclude), { region, serviceIds })
 }
