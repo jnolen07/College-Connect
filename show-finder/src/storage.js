@@ -25,3 +25,14 @@ export function guessRegion() {
     return 'US'
   }
 }
+
+// Start over: forget services, ratings and onboarding. Keeps the TMDB key so search still works.
+export function resetAll() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('showfinder:') && k !== 'showfinder:tmdbKey')
+      .forEach((k) => localStorage.removeItem(k))
+  } catch {
+    /* storage unavailable — nothing saved to clear */
+  }
+}

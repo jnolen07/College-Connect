@@ -10,6 +10,7 @@ import MyShows from './components/MyShows.jsx'
 import TitleBrowser from './components/TitleBrowser.jsx'
 import Recommendations from './components/Recommendations.jsx'
 import KeySetup from './components/KeySetup.jsx'
+import ResetButton from './components/ResetButton.jsx'
 import { SERVICES } from './services.js'
 
 // Routes live in the URL hash so Back works and pages are shareable:
@@ -126,6 +127,7 @@ export default function App() {
             {tab('library', `My shows${libCount ? ` (${libCount})` : ''}`, '#/library')}
           </nav>
           <div className="flex-1" />
+          <ResetButton count={libCount} />
           <button
             onClick={() => setEditingServices(true)}
             className="flex items-center gap-2 rounded-full border border-zinc-800 py-1 pl-1 pr-3 text-sm hover:bg-zinc-900"
