@@ -116,6 +116,10 @@ export default function App() {
       ) : (
         <Search onSelect={select} />
       )}
+      <footer className="border-t border-zinc-900 px-4 py-6 text-center text-xs text-zinc-600">
+        Data from TMDB · Streaming availability by JustWatch. This product uses the TMDB API but is not endorsed or
+        certified by TMDB.
+      </footer>
     </div>
   )
 }
