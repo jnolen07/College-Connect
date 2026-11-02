@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { IMG, myServicesFor, recommend, whereToWatch } from '../tmdb.js'
-import { RATINGS, keyOf } from '../library.js'
+import { RATINGS, keyOf, pickDisliked } from '../library.js'
 import TitleCard, { Grid, ProviderLogos, Skeleton } from './TitleCard.jsx'
 import { ServiceBadges } from './ServiceLogo.jsx'
 import KindFilter from './KindFilter.jsx'
@@ -18,7 +18,7 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
     setSeedWhere(null)
     setShowElsewhere(false)
     window.scrollTo({ top: 0 })
-    recommend(seed, { region, serviceIds, exclude: new Set(Object.keys(library)) })
+    recommend(seed, { region, serviceIds, exclude: new Set(Object.keys(library)), disliked: pickDisliked(library) })
       .then((r) => alive && setState({ loading: false, ...r }))
       .catch((e) => alive && setState({ loading: false, error: e.message }))
     whereToWatch(seed.type, seed.id, region)

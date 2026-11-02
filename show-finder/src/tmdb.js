@@ -97,7 +97,11 @@ export async function trending() {
 // Returns { included: [...providers], rent: [...], buy: [...], link }
 export async function whereToWatch(type, id, region) {
   const data = await get(`/${type}/${id}/watch/providers`)
-  const r = data.results?.[region] || {}
+  return parseProviders(data, region)
+}
+
+function parseProviders(data, region) {
+  const r = data?.results?.[region] || {}
   const map = (arr = []) => arr.map((p) => ({ id: p.provider_id, name: p.provider_name, logo: p.logo_path }))
   return {
     included: dedupe([...map(r.flatrate), ...map(r.free), ...map(r.ads)]),
@@ -117,6 +121,15 @@ export async function details(type, id) {
 }
 
 // ---------- recommendations ----------
+//
+// How a title earns its place:
+//  1. "People who liked this also liked" (TMDB recommendations, 3 pages) — the strongest signal.
+//  2. Second hop: what's recommended for the top recommendations. Titles that keep showing up
+//     across those lists are very likely the same kind of show.
+//  3. A theme search on YOUR services (same specific keywords), so there's something to watch now.
+//  Then every finalist is checked against the shows you loved for shared themes (keywords) and
+//  genres, mismatches (cartoon vs. live-action, kids/reality/talk shows, different language) are
+//  pushed down, and anything that looks like what you rated "Not for me" is penalised.
 
 const providerIdsFor = (serviceIds) => serviceIds.flatMap((id) => serviceById[id]?.tmdbIds || [])
 
@@ -131,117 +144,213 @@ export function myServicesFor(where, serviceIds) {
   return [...found.values()]
 }
 
-// Score candidates similar to one seed. Returns Map(key -> candidate).
-async function candidatesFor(seed, { region, serviceIds }, weight = 1) {
-  const { type, id } = seed
-  const info = await details(type, id)
-  const seedGenres = new Set((info.genres || []).map((g) => g.id))
-  const keywordList = info.keywords?.keywords || info.keywords?.results || []
-  const topKeywords = keywordList.slice(0, 6).map((k) => k.id)
-  const providerIds = providerIdsFor(serviceIds)
+// Genres that change what kind of thing a title *is*. Mismatch here = not a real match.
+const FORMAT_GENRES = new Set([16, 10762, 10751, 10763, 10764, 10766, 10767, 99, 10770])
+// Keywords that say nothing about a show's feel.
+const GENERIC_KEYWORD = /stinger|woman director|based on (novel|book)|^(sequel|prequel|remake|reboot|miniseries|tv series|series|season|episode)$|^\d{4}s?$|^(male|female) protagonist$|^duringcreditsstinger$/i
 
-  const none = { results: [] }
-  const [rec1, rec2, sim] = await Promise.all([
+const none = { results: [] }
+const keyOfT = (t) => `${t.type}:${t.id}`
+const keywordsOf = (d) => (d.keywords?.keywords || d.keywords?.results || []).filter((k) => !GENERIC_KEYWORD.test(k.name))
+const genresOf = (d) => new Set(d.genre_ids || (d.genres || []).map((g) => g.id))
+
+// Full info for one title: keywords + where it streams, in a single request.
+const enriched = (type, id) => get(`/${type}/${id}`, { append_to_response: 'keywords,watch/providers' })
+
+// A taste profile from one or more titles: weighted keywords, genres, languages.
+async function buildProfile(seeds) {
+  const infos = await Promise.all(seeds.map((s) => enriched(s.type, s.id).catch(() => null)))
+  const kw = new Map()
+  const genres = new Map()
+  const langs = new Map()
+  let kwTotal = 0
+  infos.forEach((info, i) => {
+    if (!info) return
+    const w = seeds[i].weight || 1
+    for (const k of keywordsOf(info)) {
+      kw.set(k.id, (kw.get(k.id) || 0) + w)
+      kwTotal += w
+    }
+    for (const g of genresOf(info)) genres.set(g, (genres.get(g) || 0) + w)
+    langs.set(info.original_language, (langs.get(info.original_language) || 0) + w)
+  })
+  return { kw, kwTotal, genres, langs, infos }
+}
+
+// Gather candidates for one seed. Collaborative score only; content scoring happens later.
+async function gather(seed, info, { region, providerIds }, pool, weight, label) {
+  const { type, id } = seed
+  const [r1, r2, r3, sim] = await Promise.all([
     get(`/${type}/${id}/recommendations`, { page: 1 }).catch(() => none),
     get(`/${type}/${id}/recommendations`, { page: 2 }).catch(() => none),
+    get(`/${type}/${id}/recommendations`, { page: 3 }).catch(() => none),
     get(`/${type}/${id}/similar`, { page: 1 }).catch(() => none),
   ])
+  const recs = [...r1.results, ...r2.results, ...r3.results]
 
-  // Discover = same genres / same themes, but ONLY on the user's services.
-  const discoverBase = {
-    watch_region: region,
-    with_watch_providers: providerIds.join('|'),
-    with_watch_monetization_types: 'flatrate|free|ads',
-    sort_by: 'vote_average.desc',
-    'vote_count.gte': type === 'tv' ? 100 : 300,
-  }
-  const discovered = providerIds.length
-    ? await Promise.all([
-        get(`/discover/${type}`, { ...discoverBase, with_genres: [...seedGenres].slice(0, 3).join(',') }).catch(() => none),
-        topKeywords.length
-          ? get(`/discover/${type}`, { ...discoverBase, with_keywords: topKeywords.join('|'), sort_by: 'popularity.desc' }).catch(() => none)
-          : none,
-      ])
-    : []
-
-  const pool = new Map()
-  const add = (items, w) => {
+  const add = (items, w, source) =>
     items.forEach((raw, i) => {
       if (raw.id === id) return
       const t = normalize(raw, type)
-      const key = `${t.type}:${t.id}`
-      const entry = pool.get(key) || { ...t, score: 0, because: new Set() }
-      entry.score += weight * w * (1 - i / 40)
-      entry.because.add(seed.title || info.title || info.name)
-      pool.set(key, entry)
+      const key = keyOfT(t)
+      const e = pool.get(key) || { ...t, lang: raw.original_language, collab: 0, hits: 0, because: new Set(), sources: new Set() }
+      e.collab += weight * w * (1 - i / (items.length + 10))
+      e.hits += 1
+      e.because.add(label)
+      e.sources.add(source)
+      pool.set(key, e)
     })
-  }
-  add([...rec1.results, ...rec2.results], 3)
-  add(sim.results, 1.5)
-  discovered.forEach((d, i) => add(d.results, i === 0 ? 1.2 : 1.6))
 
-  for (const e of pool.values()) {
-    const overlap = e.genreIds.filter((g) => seedGenres.has(g)).length
-    e.score += weight * overlap * 0.6
+  add(recs, 3, 'rec')
+  add(sim.results, 0.8, 'similar')
+
+  // Second hop: recommendations of the top recommendations.
+  const hop = await Promise.all(
+    recs.slice(0, 6).map((r) => get(`/${type}/${r.id}/recommendations`, { page: 1 }).catch(() => none)),
+  )
+  hop.forEach((h) => add(h.results, 0.6, 'hop'))
+
+  // Theme search restricted to the user's services (specific keywords only).
+  const kws = keywordsOf(info).slice(0, 8).map((k) => k.id)
+  if (providerIds.length && kws.length) {
+    const d = await get(`/discover/${type}`, {
+      watch_region: region,
+      with_watch_providers: providerIds.join('|'),
+      with_watch_monetization_types: 'flatrate|free|ads',
+      with_keywords: kws.join('|'),
+      sort_by: 'vote_count.desc',
+      'vote_count.gte': type === 'tv' ? 50 : 200,
+    }).catch(() => none)
+    add(d.results, 0, 'theme') // no collaborative credit — must earn its place on content
   }
-  return { pool, info }
 }
 
-async function placeOnServices(ranked, { region, serviceIds }) {
-  const withWhere = await Promise.all(
-    ranked.map(async (t) => {
+// Content similarity of an enriched candidate against the profile.
+function contentScore(cand, info, profile) {
+  const ckw = keywordsOf(info)
+  let shared = 0
+  let sharedW = 0
+  for (const k of ckw) {
+    const w = profile.kw.get(k.id)
+    if (w) {
+      shared += 1
+      sharedW += w
+    }
+  }
+  const kwSim = ckw.length && profile.kwTotal ? sharedW / Math.sqrt(ckw.length * profile.kwTotal) : 0
+
+  const cg = genresOf(info)
+  const pg = [...profile.genres.keys()]
+  const union = new Set([...cg, ...pg]).size || 1
+  const genreSim = [...cg].filter((g) => profile.genres.has(g)).length / union
+
+  // Multipliers (not fixed deductions) so they bite equally hard however many shows feed in.
+  let factor = 1
+  // Format mismatch: e.g. an animated or kids show for a live-action drama, or a reality/talk show.
+  for (const g of cg) if (FORMAT_GENRES.has(g) && !profile.genres.has(g)) factor *= 0.3
+  if (profile.genres.has(16) && !cg.has(16)) factor *= 0.6 // anime/cartoon fans: prefer animation
+  if (cg.size && ![...cg].some((g) => profile.genres.has(g))) factor *= 0.4 // no genre in common at all
+  if (!profile.langs.has(info.original_language)) factor *= 0.85
+  if (shared === 0) factor *= 0.6 // "people also watched" but nothing thematically alike
+
+  return { kwSim, genreSim, shared, factor }
+}
+
+async function rank(profile, pool, { region, serviceIds, exclude, dislikedPool }) {
+  // Pre-rank on collaborative signal, keep a healthy number of on-theme service matches too.
+  const all = [...pool.values()].filter((e) => !exclude.has(keyOfT(e)) && e.votes >= 25)
+  const byCollab = all.filter((e) => e.collab > 0).sort((a, b) => b.collab - a.collab).slice(0, 60)
+  const themeOnly = all.filter((e) => e.collab === 0).slice(0, 20)
+  const finalists = [...byCollab, ...themeOnly]
+
+  const scored = await Promise.all(
+    finalists.map(async (e) => {
+      let info
       try {
-        return { ...t, where: await whereToWatch(t.type, t.id, region) }
+        info = await enriched(e.type, e.id)
       } catch {
-        return { ...t, where: { included: [], rent: [], buy: [] } }
+        return null
+      }
+      const c = contentScore(e, info, profile)
+      // Theme-search finds must share real themes, not just one tag.
+      if (e.collab === 0 && c.shared < 3) return null
+      const quality = ((info.vote_average || 0) / 10) * Math.min(1, (info.vote_count || 0) / 400)
+      let score =
+        e.collab + // people who liked yours liked this
+        12 * c.kwSim + // shared specific themes
+        3 * c.genreSim +
+        1.5 * quality +
+        Math.min(3, (e.hits - 1) * 0.4) + // keeps showing up across lists
+        (e.because.size > 1 ? e.because.size : 0) // similar to several things you love
+      score *= c.factor
+      if (dislikedPool?.has(keyOfT(e))) score *= Math.pow(0.5, dislikedPool.get(keyOfT(e)))
+      const where = parseProviders(info['watch/providers'], region)
+      return {
+        ...e,
+        rating: info.vote_average || e.rating,
+        votes: info.vote_count || e.votes,
+        score,
+        where,
+        yourServices: myServicesFor(where, serviceIds),
+        because: [...e.because],
+        sources: [...e.sources],
       }
     }),
   )
-  const onYours = []
-  const elsewhere = []
-  for (const t of withWhere) {
-    t.yourServices = myServicesFor(t.where, serviceIds)
-    t.because = [...t.because]
-    ;(t.yourServices.length ? onYours : elsewhere).push(t)
+
+  const ranked = scored.filter(Boolean).sort((a, b) => b.score - a.score)
+  // Drop the tail that isn't really similar.
+  const best = ranked[0]?.score || 0
+  const good = ranked.filter((t, i) => i < 6 || t.score >= Math.max(2, best * 0.35))
+  return {
+    onYours: good.filter((t) => t.yourServices.length).slice(0, 30),
+    elsewhere: good.filter((t) => !t.yourServices.length).slice(0, 20),
   }
-  return { onYours, elsewhere }
 }
 
-function finalize(pool, exclude) {
-  for (const e of pool.values()) {
-    e.score += (e.rating / 10) * Math.min(1, e.votes / 500)
-    if (e.votes < 30) e.score -= 2 // obscure noise
-    if (e.because.size > 1) e.score += e.because.size // similar to several things you love
-  }
-  return [...pool.values()]
-    .filter((e) => !exclude.has(`${e.type}:${e.id}`))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 40)
+// Titles TMDB would recommend off your "Not for me" picks — used as a negative signal.
+async function dislikedSignal(disliked) {
+  const map = new Map()
+  const lists = await Promise.all(
+    disliked.slice(0, 4).map((d) => get(`/${d.type}/${d.id}/recommendations`, { page: 1 }).catch(() => none)),
+  )
+  lists.forEach((l, li) =>
+    l.results.slice(0, 20).forEach((r) => {
+      const key = `${disliked[li].type}:${r.id}`
+      map.set(key, (map.get(key) || 0) + 1)
+    }),
+  )
+  return map
 }
 
 /** "Because you liked X" — recommendations from one title. */
-export async function recommend(seed, { region, serviceIds, exclude = new Set() }) {
-  const { pool, info } = await candidatesFor(seed, { region, serviceIds })
-  const placed = await placeOnServices(finalize(pool, exclude), { region, serviceIds })
+export async function recommend(seed, { region, serviceIds, exclude = new Set(), disliked = [] }) {
+  const profile = await buildProfile([seed])
+  const info = profile.infos[0]
+  if (!info) throw new Error("Couldn't load that title — try again.")
+  const pool = new Map()
+  const providerIds = providerIdsFor(serviceIds)
+  const label = seed.title || info.title || info.name
+  const [, dislikedPool] = await Promise.all([
+    gather(seed, info, { region, providerIds }, pool, 1, label),
+    dislikedSignal(disliked),
+  ])
+  const placed = await rank(profile, pool, { region, serviceIds, exclude, dislikedPool })
   return { seed: { ...seed, genres: info.genres || [] }, ...placed }
 }
 
 /** "For you" — blends recommendations from several titles you loved/liked. */
-export async function recommendForYou(seeds, { region, serviceIds, exclude = new Set() }) {
-  const results = await Promise.all(
-    seeds.map((s) => candidatesFor(s, { region, serviceIds }, s.weight || 1).catch(() => null)),
-  )
+export async function recommendForYou(seeds, { region, serviceIds, exclude = new Set(), disliked = [] }) {
+  const profile = await buildProfile(seeds)
   const pool = new Map()
-  for (const r of results) {
-    if (!r) continue
-    for (const [key, c] of r.pool) {
-      const prev = pool.get(key)
-      if (!prev) pool.set(key, { ...c, because: new Set(c.because) })
-      else {
-        prev.score += c.score
-        c.because.forEach((b) => prev.because.add(b))
-      }
-    }
-  }
-  return placeOnServices(finalize(pool, exclude), { region, serviceIds })
+  const providerIds = providerIdsFor(serviceIds)
+  const [, dislikedPool] = await Promise.all([
+    Promise.all(
+      seeds.map((s, i) =>
+        profile.infos[i] ? gather(s, profile.infos[i], { region, providerIds }, pool, s.weight || 1, s.title).catch(() => {}) : null,
+      ),
+    ),
+    dislikedSignal(disliked),
+  ])
+  return rank(profile, pool, { region, serviceIds, exclude, dislikedPool })
 }

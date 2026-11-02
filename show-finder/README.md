@@ -20,16 +20,21 @@ Everything you pick is saved in your browser — no account needed.
 ## How recommendations work
 
 All data comes from [The Movie Database (TMDB)](https://www.themoviedb.org/) — free, and its
-where-to-stream data is powered by JustWatch. For the show you pick, Show Finder:
+where-to-stream data is powered by JustWatch. For the shows you loved, ShowFinder:
 
-1. Pulls TMDB's *recommendations* ("people who liked this also liked") and *similar* lists.
-2. Runs two extra searches restricted to **your** services — same genres, and same themes
-   (keywords like "heist", "time travel", "small town") — so there's always something you
-   can watch right now.
-3. Ranks everything (recommendations count most, then genre overlap and rating), then checks
-   where each one streams in your country.
+1. **Collects candidates**: TMDB's "people who liked this also liked" (3 pages), plus a
+   second hop (what's recommended for the top recommendations — titles that keep showing up
+   across those lists are very likely the same kind of show), plus a theme search limited to
+   your services.
+2. **Scores how alike they really are**: shared specific themes (TMDB keywords like
+   "drug cartel" or "antihero" — generic tags like "based on novel" are ignored), shared
+   genres, and how often it was co-recommended. Matching several of your loved shows counts extra.
+3. **Pushes down mismatches**: a cartoon/kids/reality/talk show for a live-action drama fan,
+   no genre in common, a different language, nothing thematically alike, or titles similar to
+   what you rated 👎 "Not for me". Weak leftovers are cut instead of padding the list.
+4. **Splits by where it streams**: *On your services* first, then everything else.
 
-The logic lives in `src/tmdb.js` → `recommend()` if you want to tweak it.
+The logic lives in `src/tmdb.js` (`recommend()` / `recommendForYou()`).
 
 ## Setup (≈10 minutes)
 

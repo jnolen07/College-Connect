@@ -44,3 +44,11 @@ export function pickSeeds(library, max = 6) {
     .slice(0, max)
     .map((t) => ({ ...t, weight: RATINGS[t.rating].weight }))
 }
+
+// Titles rated "Not for me" — steer recommendations away from things like these.
+export function pickDisliked(library, max = 4) {
+  return Object.values(library)
+    .filter((t) => t.rating === 'disliked')
+    .sort((a, b) => b.addedAt - a.addedAt)
+    .slice(0, max)
+}
