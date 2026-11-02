@@ -63,7 +63,11 @@ export default function App() {
   }
 
   // ---------- onboarding ----------
-  if (showIntro) return <Intro onNext={() => setShowIntro(false)} />
+  if (showIntro) {
+    // null = nobody has set this device up yet, so no "Start fresh" link.
+    const savedCount = serviceIds.length || Object.keys(library).length ? Object.keys(library).length : null
+    return <Intro onNext={() => setShowIntro(false)} savedCount={savedCount} />
+  }
 
   if (serviceIds.length === 0 || editingServices) {
     return (

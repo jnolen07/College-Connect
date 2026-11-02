@@ -1,7 +1,10 @@
+import ResetButton from './ResetButton.jsx'
+
 // Black stage, gold "ShowFinder" under a spotlight, then a Next button.
-export default function Intro({ onNext }) {
+// If someone already set the site up on this device, offer a fresh start for a new person.
+export default function Intro({ onNext, savedCount }) {
   return (
-    <div className="intro" onKeyDown={(e) => e.key === 'Enter' && onNext()}>
+    <div className="intro">
       <div className="beam" />
       <div className="spot" />
       <div className="floor" />
@@ -10,6 +13,11 @@ export default function Intro({ onNext }) {
       <button className="next btn-gold" onClick={onNext} autoFocus>
         Next
       </button>
+      {savedCount !== null && (
+        <div className="fresh-wrap">
+          <ResetButton variant="intro" count={savedCount} />
+        </div>
+      )}
     </div>
   )
 }

@@ -42,6 +42,7 @@ body { @apply text-zinc-100 antialiased; font-family: Inter, system-ui, sans-ser
 .intro .tag { position: relative; margin-top: .75rem; color: rgba(255, 236, 190, .7); letter-spacing: .25em;
   text-transform: uppercase; font-size: clamp(.65rem, 2.4vw, .85rem); opacity: 0; animation: fadeUp .8s 1.6s forwards; }
 .intro .next { position: relative; margin-top: 3rem; opacity: 0; animation: fadeUp .8s 2.1s forwards; }
+.intro .fresh-wrap { position: relative; margin-top: 1.5rem; opacity: 0; animation: fadeUp .8s 2.6s forwards; }
 
 .btn-gold { border: 1px solid #c9a03d; color: #f3d690; border-radius: 9999px; padding: .8rem 2.6rem; letter-spacing: .2em;
   text-transform: uppercase; font-weight: 600; font-size: .85rem; transition: all .25s; background: rgba(0, 0, 0, .4); }
