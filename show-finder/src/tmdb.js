@@ -147,12 +147,17 @@ export function myServicesFor(where, serviceIds) {
 // Genres that change what kind of thing a title *is*. Mismatch here = not a real match.
 const FORMAT_GENRES = new Set([16, 10762, 10751, 10763, 10764, 10766, 10767, 99, 10770])
 // Keywords that say nothing about a show's feel.
-const GENERIC_KEYWORD = /stinger|woman director|based on (novel|book)|^(sequel|prequel|remake|reboot|miniseries|tv series|series|season|episode)$|^\d{4}s?$|^(male|female) protagonist$|^duringcreditsstinger$/i
+const GENERIC_KEYWORD =
+  /stinger|woman director|based on (novel|book)|^(sequel|prequel|remake|reboot|miniseries|tv series|series|season|episode)$|^\d{4}s?$|^(male|female) protagonist$|^(friendship|family|love|relationship|friends|usa|united states|california|los angeles, california|new york city|london, england|duringcreditsstinger|aftercreditsstinger)$/i
 
 const none = { results: [] }
 const keyOfT = (t) => `${t.type}:${t.id}`
 const keywordsOf = (d) => (d.keywords?.keywords || d.keywords?.results || []).filter((k) => !GENERIC_KEYWORD.test(k.name))
-const genresOf = (d) => new Set(d.genre_ids || (d.genres || []).map((g) => g.id))
+// TV and movies use different IDs for the same idea; map movie genres onto the TV ones so a show
+// and a movie can be compared. (Action/Adventure, Sci-Fi/Fantasy, War/Politics.)
+const CANON_GENRE = { 28: 10759, 12: 10759, 878: 10765, 14: 10765, 10752: 10768 }
+const genresOf = (d) => new Set((d.genre_ids || (d.genres || []).map((g) => g.id)).map((g) => CANON_GENRE[g] || g))
+const otherType = (type) => (type === 'tv' ? 'movie' : 'tv')
 
 // Full info for one title: keywords + where it streams, in a single request.
 const enriched = (type, id) => get(`/${type}/${id}`, { append_to_response: 'keywords,watch/providers' })
@@ -188,10 +193,10 @@ async function gather(seed, info, { region, providerIds }, pool, weight, label) 
   ])
   const recs = [...r1.results, ...r2.results, ...r3.results]
 
-  const add = (items, w, source) =>
+  const add = (items, w, source, asType = type) =>
     items.forEach((raw, i) => {
-      if (raw.id === id) return
-      const t = normalize(raw, type)
+      if (raw.id === id && asType === type) return
+      const t = normalize(raw, asType)
       const key = keyOfT(t)
       const e = pool.get(key) || { ...t, lang: raw.original_language, collab: 0, hits: 0, because: new Set(), sources: new Set() }
       e.collab += weight * w * (1 - i / (items.length + 10))
@@ -210,19 +215,28 @@ async function gather(seed, info, { region, providerIds }, pool, weight, label) 
   )
   hop.forEach((h) => add(h.results, 0.6, 'hop'))
 
-  // Theme search restricted to the user's services (specific keywords only).
-  const kws = keywordsOf(info).slice(0, 8).map((k) => k.id)
-  if (providerIds.length && kws.length) {
-    const d = await get(`/discover/${type}`, {
-      watch_region: region,
-      with_watch_providers: providerIds.join('|'),
-      with_watch_monetization_types: 'flatrate|free|ads',
+  // Theme searches (specific keywords only). These get no collaborative credit, so they must
+  // earn their place on shared themes when scored.
+  const kws = keywordsOf(info).slice(0, 15).map((k) => k.id)
+  if (!kws.length) return
+  const other = otherType(type)
+  const theme = (t, onServices) =>
+    get(`/discover/${t}`, {
       with_keywords: kws.join('|'),
       sort_by: 'vote_count.desc',
-      'vote_count.gte': type === 'tv' ? 50 : 200,
+      'vote_count.gte': t === 'tv' ? 50 : 200,
+      ...(onServices && providerIds.length
+        ? { watch_region: region, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate|free|ads' }
+        : {}),
     }).catch(() => none)
-    add(d.results, 0, 'theme') // no collaborative credit — must earn its place on content
-  }
+  const [same, crossMine, crossAll] = await Promise.all([
+    providerIds.length ? theme(type, true) : none,
+    // TMDB has no "movies like this show" list, so cross over on shared themes instead.
+    theme(other, true),
+    theme(other, false),
+  ])
+  add(same.results, 0, 'theme')
+  add([...crossMine.results, ...crossAll.results], 0, 'cross', other)
 }
 
 // Content similarity of an enriched candidate against the profile.
@@ -253,15 +267,16 @@ function contentScore(cand, info, profile) {
   if (!profile.langs.has(info.original_language)) factor *= 0.85
   if (shared === 0) factor *= 0.6 // "people also watched" but nothing thematically alike
 
-  return { kwSim, genreSim, shared, factor }
+  return { kwSim, genreSim, shared, factor, genreOverlap: [...cg].some((g) => profile.genres.has(g)) }
 }
 
 async function rank(profile, pool, { region, serviceIds, exclude, dislikedPool }) {
   // Pre-rank on collaborative signal, keep a healthy number of on-theme service matches too.
   const all = [...pool.values()].filter((e) => !exclude.has(keyOfT(e)) && e.votes >= 25)
   const byCollab = all.filter((e) => e.collab > 0).sort((a, b) => b.collab - a.collab).slice(0, 60)
-  const themeOnly = all.filter((e) => e.collab === 0).slice(0, 20)
-  const finalists = [...byCollab, ...themeOnly]
+  const themeOnly = all.filter((e) => e.collab === 0 && !e.sources.has('cross')).slice(0, 20)
+  const crossOnly = all.filter((e) => e.collab === 0 && e.sources.has('cross')).sort((a, b) => b.hits - a.hits).slice(0, 30)
+  const finalists = [...byCollab, ...themeOnly, ...crossOnly]
 
   const scored = await Promise.all(
     finalists.map(async (e) => {
@@ -272,8 +287,11 @@ async function rank(profile, pool, { region, serviceIds, exclude, dislikedPool }
         return null
       }
       const c = contentScore(e, info, profile)
-      // Theme-search finds must share real themes, not just one tag.
-      if (e.collab === 0 && c.shared < 3) return null
+      // Theme-search finds must share real themes, not just one tag. Cross-type finds (a movie for
+      // a show fan, or vice versa) also need a genre in common.
+      if (e.collab === 0) {
+        if (e.sources.has('cross') ? c.shared < 2 || !c.genreOverlap : c.shared < 3) return null
+      }
       const quality = ((info.vote_average || 0) / 10) * Math.min(1, (info.vote_count || 0) / 400)
       let score =
         e.collab + // people who liked yours liked this
@@ -299,12 +317,19 @@ async function rank(profile, pool, { region, serviceIds, exclude, dislikedPool }
   )
 
   const ranked = scored.filter(Boolean).sort((a, b) => b.score - a.score)
-  // Drop the tail that isn't really similar.
-  const best = ranked[0]?.score || 0
-  const good = ranked.filter((t, i) => i < 6 || t.score >= Math.max(2, best * 0.35))
+  // Cut the tail that isn't really similar. Shows and movies are judged separately, since movies
+  // for a TV fan come only from shared themes and score lower than co-recommended shows.
+  const keep = []
+  for (const t of ['tv', 'movie']) {
+    const ofType = ranked.filter((r) => r.type === t)
+    const best = ofType[0]?.score || 0
+    keep.push(...ofType.filter((r) => r.score >= Math.max(1.5, best * 0.35)).slice(0, 40))
+  }
+  keep.sort((a, b) => b.score - a.score)
+  const cap = (list, n) => ['tv', 'movie'].flatMap((t) => list.filter((r) => r.type === t).slice(0, n)).sort((a, b) => b.score - a.score)
   return {
-    onYours: good.filter((t) => t.yourServices.length).slice(0, 30),
-    elsewhere: good.filter((t) => !t.yourServices.length).slice(0, 20),
+    onYours: cap(keep.filter((t) => t.yourServices.length), 30),
+    elsewhere: cap(keep.filter((t) => !t.yourServices.length), 20),
   }
 }
 

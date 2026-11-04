@@ -25,7 +25,8 @@ where-to-stream data is powered by JustWatch. For the shows you loved, ShowFinde
 1. **Collects candidates**: TMDB's "people who liked this also liked" (3 pages), plus a
    second hop (what's recommended for the top recommendations — titles that keep showing up
    across those lists are very likely the same kind of show), plus a theme search limited to
-   your services.
+   your services. Movies for show fans (and shows for movie fans) come from the same theme
+   search across types, since TMDB has no "movies like this show" list.
 2. **Scores how alike they really are**: shared specific themes (TMDB keywords like
    "drug cartel" or "antihero" — generic tags like "based on novel" are ignored), shared
    genres, and how often it was co-recommended. Matching several of your loved shows counts extra.
