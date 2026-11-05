@@ -11,6 +11,7 @@ import TitleBrowser from './components/TitleBrowser.jsx'
 import Recommendations from './components/Recommendations.jsx'
 import KeySetup from './components/KeySetup.jsx'
 import ResetButton from './components/ResetButton.jsx'
+import TitleSheet from './components/TitleSheet.jsx'
 import { SERVICES } from './services.js'
 
 // Routes live in the URL hash so Back works and pages are shareable:
@@ -37,6 +38,7 @@ export default function App() {
   const [region] = useState(() => load('region', guessRegion()))
   const [route, setRoute] = useState(parseHash)
   const [seed, setSeed] = useState(null)
+  const [sheet, setSheet] = useState(null) // title whose details + where-to-watch are open
   const { library, rate } = useLibrary()
 
   useEffect(() => {
@@ -58,12 +60,18 @@ export default function App() {
   }, [route, keyOk]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const select = (t) => {
+    setSheet(null)
     setSeed(t)
     go(`#/${t.type}/${t.id}`)
   }
+  const openSheet = (t) => setSheet(t)
 
   // ---------- onboarding ----------
-  if (showIntro) return <Intro onNext={() => setShowIntro(false)} />
+  if (showIntro) {
+    // null = nobody has set this device up yet, so no "Start fresh" link.
+    const savedCount = serviceIds.length || Object.keys(library).length ? Object.keys(library).length : null
+    return <Intro onNext={() => setShowIntro(false)} savedCount={savedCount} />
+  }
 
   if (serviceIds.length === 0 || editingServices) {
     return (
@@ -155,7 +163,7 @@ export default function App() {
       </header>
 
       {route.page === 'home' && (
-        <ForYou library={library} onRate={rate} region={region} serviceIds={serviceIds} onSelect={select} goSearch={() => go('#/search')} />
+        <ForYou library={library} onRate={rate} region={region} serviceIds={serviceIds} onSelect={openSheet} goSearch={() => go('#/search')} />
       )}
       {route.page === 'search' && (
         <main className="mx-auto max-w-6xl px-4 pb-16 pt-8">
@@ -163,10 +171,10 @@ export default function App() {
             <span className="gold-text">Find something like…</span>
           </h1>
           <p className="mb-5 text-zinc-400">Tap a poster for similar shows, or “Seen it?” to add it to your shows.</p>
-          <TitleBrowser library={library} onRate={rate} onSelect={select} />
+          <TitleBrowser library={library} onRate={rate} onSelect={openSheet} />
         </main>
       )}
-      {route.page === 'library' && <MyShows library={library} onRate={rate} onSelect={select} goSearch={() => go('#/search')} />}
+      {route.page === 'library' && <MyShows library={library} onRate={rate} onSelect={openSheet} goSearch={() => go('#/search')} />}
       {route.page === 'title' &&
         (seed && seed.id === route.id ? (
           <Recommendations
@@ -175,12 +183,25 @@ export default function App() {
             serviceIds={serviceIds}
             library={library}
             onRate={rate}
-            onSelect={select}
+            onSelect={openSheet}
             onBack={() => window.history.back()}
           />
         ) : (
           <p className="p-8 text-zinc-400">Loading…</p>
         ))}
+
+      {sheet && (
+        <TitleSheet
+          key={`${sheet.type}:${sheet.id}`}
+          item={sheet}
+          region={region}
+          serviceIds={serviceIds}
+          library={library}
+          onRate={rate}
+          onClose={() => setSheet(null)}
+          onMoreLike={select}
+        />
+      )}
 
       <footer className="border-t border-white/5 px-4 py-6 text-center text-xs text-zinc-600">
         Data from TMDB · Streaming availability by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.

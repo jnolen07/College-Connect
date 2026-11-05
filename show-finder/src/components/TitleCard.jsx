@@ -34,7 +34,7 @@ export default function TitleCard({ title, onSelect, services, providers, rating
         <button
           onClick={() => (onSelect ? onSelect(title) : setMenu(true))}
           className="block w-full text-left"
-          title={onSelect ? `More like ${title.title}` : `Rate ${title.title}`}
+          title={onSelect ? `${title.title}: details & where to watch` : `Rate ${title.title}`}
         >
           <div className={`aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900 ${r ? 'ring-2 ring-amber-300/70' : ''}`}>
             {title.poster ? (

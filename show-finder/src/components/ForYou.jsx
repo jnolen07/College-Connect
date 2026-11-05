@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { recommendForYou } from '../tmdb.js'
-import { keyOf, pickSeeds } from '../library.js'
+import { keyOf, pickDisliked, pickSeeds } from '../library.js'
 import TitleCard, { Grid, Skeleton } from './TitleCard.jsx'
 import KindFilter from './KindFilter.jsx'
 
@@ -16,7 +16,12 @@ export default function ForYou({ library, onRate, region, serviceIds, onSelect, 
     if (!seeds.length) return setState({ loading: false, onYours: [], elsewhere: [] })
     let alive = true
     setState({ loading: true })
-    recommendForYou(seeds, { region, serviceIds, exclude: new Set(Object.keys(library)) })
+    recommendForYou(seeds, {
+      region,
+      serviceIds,
+      exclude: new Set(Object.keys(library)),
+      disliked: pickDisliked(library),
+    })
       .then((r) => alive && setState({ loading: false, ...r }))
       .catch((e) => alive && setState({ loading: false, error: e.message }))
     return () => {
