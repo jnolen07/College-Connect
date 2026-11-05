@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { IMG, myServicesFor, recommend, whereToWatch } from '../tmdb.js'
+import { IMG, recommend, whereToWatch } from '../tmdb.js'
 import { RATINGS, keyOf, pickDisliked } from '../library.js'
-import TitleCard, { Grid, ProviderLogos, Skeleton } from './TitleCard.jsx'
-import { ServiceBadges } from './ServiceLogo.jsx'
+import TitleCard, { Grid, Skeleton } from './TitleCard.jsx'
+import WhereToWatch from './WhereToWatch.jsx'
 import KindFilter from './KindFilter.jsx'
 
 // "Because you liked X" page for a single title.
@@ -32,7 +32,6 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
   const keep = (t) => !library[keyOf(t)] && (kind === 'all' || t.type === kind)
   const onYours = (state.onYours || []).filter(keep)
   const elsewhere = (state.elsewhere || []).filter(keep)
-  const seedOnYours = seedWhere ? myServicesFor(seedWhere, serviceIds) : []
   const seedRating = library[keyOf(seed)]?.rating
 
   return (
@@ -51,23 +50,6 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
               {seed.title} {seed.year && <span className="font-sans text-xl font-normal text-zinc-400">({seed.year})</span>}
             </h1>
             {state.seed?.genres?.length > 0 && <p className="mt-1 text-sm text-zinc-400">{state.seed.genres.map((g) => g.name).join(' · ')}</p>}
-            {seedWhere && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-300">
-                {seedOnYours.length ? (
-                  <>
-                    <span>Watch it on</span>
-                    <ServiceBadges services={seedOnYours} />
-                  </>
-                ) : seedWhere.included.length ? (
-                  <>
-                    <span className="text-zinc-400">Not on your services — streams on</span>
-                    <ProviderLogos providers={seedWhere.included} />
-                  </>
-                ) : (
-                  <span className="text-zinc-400">Not streaming in your country right now</span>
-                )}
-              </div>
-            )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="text-sm text-zinc-400">Seen it?</span>
               {Object.entries(RATINGS).map(([k, r]) => (
@@ -85,6 +67,16 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
       </div>
 
       <div className="mx-auto max-w-6xl px-4 pb-16">
+        {seedWhere && (
+          <details open className="mb-6 rounded-2xl border border-white/10 bg-zinc-950 p-4 sm:p-5">
+            <summary className="cursor-pointer font-display text-lg">
+              <span className="gold-text">Where to watch {seed.title}</span>
+            </summary>
+            <div className="mt-4">
+              <WhereToWatch title={seed} where={seedWhere} serviceIds={serviceIds} />
+            </div>
+          </details>
+        )}
         <KindFilter kind={kind} setKind={setKind} />
         {state.loading && <Skeleton />}
         {state.error && <p className="mt-4 rounded-lg bg-red-950 p-4 text-red-200">{state.error}</p>}
@@ -119,7 +111,7 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
             )}
           </>
         )}
-        <p className="mt-12 text-xs text-zinc-600">Tip: tap any poster to get recommendations based on that one instead.</p>
+        <p className="mt-12 text-xs text-zinc-600">Tip: tap any poster to see where to watch it, or “More like this” to keep going.</p>
       </div>
     </div>
   )

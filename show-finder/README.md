@@ -12,7 +12,11 @@ you pay for** first, so you don't have to sign up for anything new.
 3. **What have you watched?**: search shows/movies and rate them ❤️ Loved / 👍 Liked / 👎 Not for me.
 4. **Picks for you**: recommendations blended from everything you loved/liked, with
    *On your services* first. Each card says which service it's on and which of your shows it's like.
-5. **Search** any title for "more like this", and **My shows** to see/change what you've rated.
+5. **Tap any poster** for details and **Where to watch**: every option grouped as *On your
+   services*, *Stream*, *Free*, and *Rent or buy*. Tap a service to open the title there
+   (it opens that service's search for the title; unknown services go to TMDB's full list).
+   Links are in `src/watchLinks.js`.
+6. **Search** any title for "more like this", and **My shows** to see/change what you've rated.
    Rate anything from any page with **Seen it?** and it drops out of your recommendations.
 
 Everything you pick is saved in your browser — no account needed.

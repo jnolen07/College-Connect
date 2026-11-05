@@ -103,11 +103,15 @@ export async function whereToWatch(type, id, region) {
 function parseProviders(data, region) {
   const r = data?.results?.[region] || {}
   const map = (arr = []) => arr.map((p) => ({ id: p.provider_id, name: p.provider_name, logo: p.logo_path }))
+  const stream = dedupe(map(r.flatrate))
+  const streamIds = new Set(stream.map((p) => p.id))
   return {
     included: dedupe([...map(r.flatrate), ...map(r.free), ...map(r.ads)]),
-    rent: map(r.rent),
-    buy: map(r.buy),
-    link: r.link,
+    stream, // with a subscription
+    free: dedupe([...map(r.free), ...map(r.ads)]).filter((p) => !streamIds.has(p.id)), // free / free with ads
+    rent: dedupe(map(r.rent)),
+    buy: dedupe(map(r.buy)),
+    link: r.link, // TMDB's full where-to-watch page (JustWatch data)
   }
 }
 
@@ -161,6 +165,19 @@ const otherType = (type) => (type === 'tv' ? 'movie' : 'tv')
 
 // Full info for one title: keywords + where it streams, in a single request.
 const enriched = (type, id) => get(`/${type}/${id}`, { append_to_response: 'keywords,watch/providers' })
+
+/** Everything the title sheet needs: basics, overview, genres and every way to watch it. */
+export async function titleInfo(type, id, region) {
+  const d = await enriched(type, id)
+  return {
+    ...normalize(d, type),
+    genres: d.genres || [],
+    tagline: d.tagline,
+    runtime: d.runtime || d.episode_run_time?.[0] || null,
+    seasons: d.number_of_seasons || null,
+    where: parseProviders(d['watch/providers'], region),
+  }
+}
 
 // A taste profile from one or more titles: weighted keywords, genres, languages.
 async function buildProfile(seeds) {
