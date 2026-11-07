@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { IMG, titleInfo } from '../tmdb.js'
 import { RATINGS, keyOf } from '../library.js'
 import WhereToWatch from './WhereToWatch.jsx'
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, MessageSquare, X } from 'lucide-react'
+import { FEEDBACK_URL } from '../config.js'
 
 // Details for one title: what it is, every place to watch it, rate it, or find more like it.
 export default function TitleSheet({ item, region, serviceIds, library, onRate, onClose, onMoreLike }) {
@@ -75,6 +76,16 @@ export default function TitleSheet({ item, region, serviceIds, library, onRate, 
             {!info && !error && <div className="h-28 animate-pulse rounded-xl bg-zinc-900" />}
             {info && <WhereToWatch title={info} where={info.where} serviceIds={serviceIds} />}
           </div>
+          {FEEDBACK_URL && (
+            <a
+              href={FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300"
+            >
+              <MessageSquare size={13} /> Wrong info or a link that didn’t work? Send feedback
+            </a>
+          )}
 
           <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-white/10 pt-5">
             <span className="mr-1 text-sm text-zinc-400">Seen it?</span>
