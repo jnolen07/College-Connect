@@ -260,5 +260,9 @@ const FAQ = [
     'Can I hand my phone to a friend to try it?',
     'Yes — tap “New here? Start fresh” on the home page. It clears the last person’s services and ratings so the next person can set up their own.',
   ],
+  [
+    'Can I send a show to my TV?',
+    'Yes — in “Where to watch”, switch “Watch on” to TV. ShowFinder shows the quickest way for your TV: what to say to your voice remote, how to cast or AirPlay from your phone, or what to search for in the TV app. (Websites can’t control a TV directly, so these are the fastest real ways.)',
+  ],
   ['Which countries does it work in?', 'ShowFinder is built for the US streaming services. Availability data follows your device’s region.'],
 ]
