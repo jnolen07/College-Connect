@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { details, hasKey, normalize } from './tmdb.js'
 import { guessRegion, load, save } from './storage.js'
 import { useLibrary } from './library.js'
-import Intro from './components/Intro.jsx'
+import Landing from './components/Landing.jsx'
+import StaticPage from './components/StaticPage.jsx'
+import AppHeader from './components/AppHeader.jsx'
+import PageHeader from './components/PageHeader.jsx'
+import SiteFooter from './components/SiteFooter.jsx'
+import OnboardingBar from './components/OnboardingBar.jsx'
 import ServicePicker from './components/ServicePicker.jsx'
 import SeenStep from './components/SeenStep.jsx'
 import ForYou from './components/ForYou.jsx'
@@ -10,17 +15,22 @@ import MyShows from './components/MyShows.jsx'
 import TitleBrowser from './components/TitleBrowser.jsx'
 import Recommendations from './components/Recommendations.jsx'
 import KeySetup from './components/KeySetup.jsx'
-import ResetButton from './components/ResetButton.jsx'
 import TitleSheet from './components/TitleSheet.jsx'
 import { SERVICES } from './services.js'
 
 // Routes live in the URL hash so Back works and pages are shareable:
 //   #/          picks for you        #/search    search
 //   #/library   my shows             #/tv/1396   more like a title
+//   #/welcome   landing page (#/welcome/faq jumps to a section)
+//   #/about, #/privacy               static pages
 function parseHash() {
   const h = window.location.hash
   const m = h.match(/^#\/(tv|movie)\/(\d+)/)
   if (m) return { page: 'title', type: m[1], id: Number(m[2]) }
+  const w = h.match(/^#\/welcome(?:\/(\w+))?/)
+  if (w) return { page: 'welcome', section: w[1] }
+  if (h.startsWith('#/about')) return { page: 'about' }
+  if (h.startsWith('#/privacy')) return { page: 'privacy' }
   if (h.startsWith('#/search')) return { page: 'search' }
   if (h.startsWith('#/library')) return { page: 'library' }
   return { page: 'home' }
@@ -66,12 +76,28 @@ export default function App() {
   }
   const openSheet = (t) => setSheet(t)
 
-  // ---------- onboarding ----------
-  if (showIntro) {
+  // ---------- public pages ----------
+  if (route.page === 'about' || route.page === 'privacy') return <StaticPage page={route.page} />
+
+  const setUp = serviceIds.length > 0 && onboarded
+  if (showIntro || route.page === 'welcome') {
     // null = nobody has set this device up yet, so no "Start fresh" link.
     const savedCount = serviceIds.length || Object.keys(library).length ? Object.keys(library).length : null
-    return <Intro onNext={() => setShowIntro(false)} savedCount={savedCount} />
+    return (
+      <Landing
+        returning={setUp}
+        savedCount={savedCount}
+        section={route.page === 'welcome' ? route.section : null}
+        onStart={() => {
+          setShowIntro(false)
+          if (route.page === 'welcome') go('#/')
+          window.scrollTo({ top: 0 })
+        }}
+      />
+    )
   }
+
+  // ---------- onboarding ----------
 
   if (serviceIds.length === 0 || editingServices) {
     return (
@@ -91,8 +117,11 @@ export default function App() {
 
   if (!keyOk) {
     return (
-      <div className="min-h-screen bg-black px-4 py-16">
-        <KeySetup onDone={() => setKeyOk(true)} />
+      <div className="min-h-screen bg-[var(--bg)]">
+        <OnboardingBar />
+        <div className="px-4 py-12 sm:py-20">
+          <KeySetup onDone={() => setKeyOk(true)} />
+        </div>
       </div>
     )
   }
@@ -113,65 +142,25 @@ export default function App() {
 
   // ---------- main app ----------
   const libCount = Object.keys(library).length
-  const tab = (page, label, hash) => (
-    <button
-      onClick={() => go(hash)}
-      className={`rounded-full px-3 py-1.5 text-sm transition ${route.page === page ? 'bg-amber-200 text-black' : 'text-zinc-300 hover:bg-zinc-900'}`}
-    >
-      {label}
-    </button>
-  )
 
   return (
-    <div className="min-h-screen bg-black">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-black/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-          <button onClick={() => go('#/')} className="font-display text-xl font-extrabold">
-            <span className="gold-text">ShowFinder</span>
-          </button>
-          <nav className="order-last flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
-            {tab('home', 'For you', '#/')}
-            {tab('search', 'Search', '#/search')}
-            {tab('library', `My shows${libCount ? ` (${libCount})` : ''}`, '#/library')}
-          </nav>
-          <div className="flex-1" />
-          <ResetButton count={libCount} />
-          <button
-            onClick={() => setEditingServices(true)}
-            className="flex items-center gap-2 rounded-full border border-zinc-800 py-1 pl-1 pr-3 text-sm hover:bg-zinc-900"
-            title="Change your services"
-          >
-            <span className="flex -space-x-1.5">
-              {serviceIds.slice(0, 4).map((id) => {
-                const s = SERVICES.find((x) => x.id === id)
-                return (
-                  <span key={id} className="h-6 w-6 overflow-hidden rounded-full ring-2 ring-black" style={{ background: s.bg }}>
-                    {s.path ? (
-                      <svg viewBox="0 0 24 24" className="h-full w-full p-1" fill={s.fg}>
-                        <path d={s.path} />
-                      </svg>
-                    ) : (
-                      <span className="flex h-full items-center justify-center text-[9px] font-bold text-white">{s.name[0]}</span>
-                    )}
-                  </span>
-                )
-              })}
-            </span>
-            My services
-          </button>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-[var(--bg)]">
+      <AppHeader page={route.page} libCount={libCount} serviceIds={serviceIds} onEditServices={() => setEditingServices(true)} />
 
+      <div className="flex-1">
       {route.page === 'home' && (
         <ForYou library={library} onRate={rate} region={region} serviceIds={serviceIds} onSelect={openSheet} goSearch={() => go('#/search')} />
       )}
       {route.page === 'search' && (
-        <main className="mx-auto max-w-6xl px-4 pb-16 pt-8">
-          <h1 className="mb-1 font-display text-3xl font-semibold sm:text-4xl">
-            <span className="gold-text">Find something like…</span>
-          </h1>
-          <p className="mb-5 text-zinc-400">Tap a poster for similar shows, or “Seen it?” to add it to your shows.</p>
-          <TitleBrowser library={library} onRate={rate} onSelect={openSheet} />
+        <main className="mx-auto max-w-6xl px-4 pb-16">
+          <PageHeader
+            eyebrow="Search"
+            title="Find something like…"
+            subtitle="Search any show or movie. Tap a poster to see where to watch it and find more like it."
+          />
+          <div className="mt-6">
+            <TitleBrowser library={library} onRate={rate} onSelect={openSheet} />
+          </div>
         </main>
       )}
       {route.page === 'library' && <MyShows library={library} onRate={rate} onSelect={openSheet} goSearch={() => go('#/search')} />}
@@ -187,8 +176,11 @@ export default function App() {
             onBack={() => window.history.back()}
           />
         ) : (
-          <p className="p-8 text-zinc-400">Loading…</p>
+          <div className="mx-auto max-w-6xl px-4 py-16">
+            <div className="h-8 w-64 animate-pulse rounded-lg bg-white/[.06]" />
+          </div>
         ))}
+      </div>
 
       {sheet && (
         <TitleSheet
@@ -203,9 +195,9 @@ export default function App() {
         />
       )}
 
-      <footer className="border-t border-white/5 px-4 py-6 text-center text-xs text-zinc-600">
-        Data from TMDB · Streaming availability by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.
-      </footer>
+      <div className="pb-16 md:pb-0">
+        <SiteFooter compact />
+      </div>
     </div>
   )
 }

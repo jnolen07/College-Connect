@@ -9,7 +9,7 @@ export default function ServiceLogo({ service, size = 'lg', className = '' }) {
   let mark
   if (service.path) {
     mark = (
-      <svg viewBox="0 0 24 24" className="h-full w-full" fill={service.fg} role="img" aria-label={service.name}>
+      <svg viewBox="0 0 24 24" overflow="visible" className="h-full w-full" fill={service.fg} role="img" aria-label={service.name}>
         <path d={service.path} />
       </svg>
     )
@@ -38,22 +38,29 @@ export default function ServiceLogo({ service, size = 'lg', className = '' }) {
   )
 }
 
-// Last-resort text versions styled after each brand.
+// Last-resort text versions styled after each brand. SVG so they scale to any tile size.
 function Wordmark({ service, small }) {
   if (small) return <span className="text-[9px] font-bold text-white">{service.name[0]}</span>
   if (service.id === 'peacock') {
+    const dots = ['#ffc400', '#ff7a00', '#ff1f48', '#c537d2', '#3f6fff', '#00c3a5']
     return (
-      <div className="flex flex-col items-center">
-        <span className="text-lg font-extrabold lowercase tracking-tight text-white">peacock</span>
-        <span className="mt-1 flex gap-1">
-          {['#ffc400', '#ff7a00', '#ff1f48', '#c537d2', '#3f6fff', '#00c3a5'].map((c) => (
-            <i key={c} className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
-          ))}
-        </span>
-      </div>
+      <svg viewBox="0 0 100 44" className="h-full w-full" role="img" aria-label="Peacock">
+        <text x="50" y="24" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="800" fontFamily="Inter, sans-serif" letterSpacing="-1">
+          peacock
+        </text>
+        {dots.map((c, i) => (
+          <circle key={c} cx={32 + i * 7.2} cy="36" r="2.6" fill={c} />
+        ))}
+      </svg>
     )
   }
-  return <span className="font-display text-xl font-semibold text-white">{service.name}</span>
+  return (
+    <svg viewBox="0 0 100 40" className="h-full w-full" role="img" aria-label={service.name}>
+      <text x="50" y="27" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="600" fontFamily="Cinzel, Georgia, serif">
+        {service.name}
+      </text>
+    </svg>
+  )
 }
 
 export function ServiceBadges({ services }) {

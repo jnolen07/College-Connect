@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IMG } from '../tmdb.js'
 import { RATINGS } from '../library.js'
 import { ServiceBadges } from './ServiceLogo.jsx'
+import { Film, Star } from 'lucide-react'
 
 export function ProviderLogos({ providers, max = 4 }) {
   if (!providers?.length) return null
@@ -29,18 +30,31 @@ export default function TitleCard({ title, onSelect, services, providers, rating
   }
 
   return (
-    <div className={`group relative flex flex-col ${dim ? 'opacity-75 hover:opacity-100' : ''}`}>
-      <div className="relative">
+    <div className={`group relative flex flex-col transition ${dim ? 'opacity-75 hover:opacity-100' : ''}`}>
+      <div className="relative transition duration-300 group-hover:-translate-y-1">
         <button
           onClick={() => (onSelect ? onSelect(title) : setMenu(true))}
           className="block w-full text-left"
           title={onSelect ? `${title.title}: details & where to watch` : `Rate ${title.title}`}
         >
-          <div className={`aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900 ${r ? 'ring-2 ring-amber-300/70' : ''}`}>
+          <div
+            className={`relative aspect-[2/3] overflow-hidden rounded-xl bg-[var(--surface-2)] shadow-lg shadow-black/40 ring-1 transition duration-300 group-hover:shadow-xl group-hover:shadow-black/60 ${
+              r ? 'ring-2 ring-amber-300/70' : 'ring-white/[.08] group-hover:ring-white/20'
+            }`}
+          >
             {title.poster ? (
-              <img src={`${IMG}/w342${title.poster}`} alt="" loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+              <img src={`${IMG}/w342${title.poster}`} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
             ) : (
-              <div className="flex h-full items-center justify-center p-3 text-center text-sm text-zinc-500">{title.title}</div>
+              <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-zinc-800 to-zinc-950 p-4 text-center">
+                <Film size={22} className="text-zinc-600" />
+                <span className="text-sm font-medium text-zinc-400">{title.title}</span>
+              </div>
+            )}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
+            {title.rating > 0 && !r && (
+              <span className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 rounded-md bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold backdrop-blur">
+                <Star size={11} className="fill-amber-300 text-amber-300" /> {title.rating.toFixed(1)}
+              </span>
             )}
           </div>
         </button>
@@ -90,11 +104,9 @@ export default function TitleCard({ title, onSelect, services, providers, rating
         )}
       </div>
 
-      <div className="mt-2 line-clamp-2 text-sm font-medium leading-snug">{title.title}</div>
-      <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-400">
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5 uppercase">{title.type === 'tv' ? 'TV' : 'Movie'}</span>
-        {title.year && <span>{title.year}</span>}
-        {title.rating > 0 && <span>★ {title.rating.toFixed(1)}</span>}
+      <div className="mt-2.5 line-clamp-2 text-sm font-medium leading-snug">{title.title}</div>
+      <div className="mt-0.5 text-xs text-zinc-500">
+        {[title.year, title.type === 'tv' ? 'TV show' : 'Movie'].filter(Boolean).join(' · ')}
       </div>
       {services?.length > 0 && (
         <div className="mt-1.5">
@@ -107,7 +119,7 @@ export default function TitleCard({ title, onSelect, services, providers, rating
         </div>
       )}
       {because?.length > 0 && (
-        <p className="mt-1 line-clamp-1 text-[11px] text-zinc-500" title={`Because you liked ${because.join(', ')}`}>
+        <p className="mt-1.5 line-clamp-1 text-[11px] text-zinc-500" title={`Because you liked ${because.join(', ')}`}>
           Because you liked {because.slice(0, 2).join(' & ')}
         </p>
       )}

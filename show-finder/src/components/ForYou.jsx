@@ -3,6 +3,9 @@ import { recommendForYou } from '../tmdb.js'
 import { keyOf, pickDisliked, pickSeeds } from '../library.js'
 import TitleCard, { Grid, Skeleton } from './TitleCard.jsx'
 import KindFilter from './KindFilter.jsx'
+import PageHeader from './PageHeader.jsx'
+import { Collapsible, EmptyState, ErrorNote, SectionTitle } from './Section.jsx'
+import { RefreshCw, Sparkles } from 'lucide-react'
 
 export default function ForYou({ library, onRate, region, serviceIds, onSelect, goSearch }) {
   // Freeze seeds when the page opens so rating a card doesn't reshuffle everything.
@@ -40,45 +43,47 @@ export default function ForYou({ library, onRate, region, serviceIds, onSelect, 
 
   if (!seeds.length) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <h1 className="font-display text-3xl gold-text">Picks for you</h1>
-        <p className="mt-3 text-zinc-400">Rate a few shows or movies you loved and your picks will show up here.</p>
-        <button className="btn-gold mt-6" onClick={goSearch}>
-          Add what I've watched
-        </button>
+      <div className="mx-auto max-w-6xl px-4 pb-16">
+        <PageHeader eyebrow="For you" title="Picks for you" />
+        <EmptyState
+          icon={Sparkles}
+          title="Tell us what you love"
+          body="Rate a few shows or movies you loved and your personal picks will show up here."
+          action={
+            <button className="btn-gold" onClick={goSearch}>
+              Add what I’ve watched
+            </button>
+          }
+        />
       </div>
     )
   }
 
+  const basedOn = seeds.slice(0, 3).map((s) => s.title).join(', ') + (seeds.length > 3 ? ` and ${seeds.length - 3} more` : '')
+
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16 pt-8">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex-1">
-          <h1 className="font-display text-3xl font-semibold sm:text-4xl">
-            <span className="gold-text">Picks for you</span>
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Based on {seeds.slice(0, 3).map((s) => s.title).join(', ')}
-            {seeds.length > 3 ? ` and ${seeds.length - 3} more` : ''}
-          </p>
-        </div>
-        <button onClick={refresh} className="rounded-full border border-zinc-700 px-4 py-1.5 text-sm hover:bg-zinc-900">
-          ↻ Refresh picks
-        </button>
-      </div>
+    <div className="mx-auto max-w-6xl px-4 pb-16">
+      <PageHeader
+        eyebrow="For you"
+        title="Picks for you"
+        subtitle={`Based on ${basedOn}`}
+        actions={
+          <button onClick={refresh} className="btn-outline btn-sm">
+            <RefreshCw size={15} /> Refresh
+          </button>
+        }
+      />
 
       <KindFilter kind={kind} setKind={setKind} />
 
       {state.loading && <Skeleton />}
-      {state.error && <p className="mt-4 rounded-lg bg-red-950 p-4 text-red-200">{state.error}</p>}
+      {state.error && <ErrorNote>{state.error}</ErrorNote>}
 
       {!state.loading && !state.error && (
         <>
-          <h2 className="mt-6 text-lg font-semibold">
-            On your services <span className="text-zinc-500">({onYours.length})</span>
-          </h2>
+          <SectionTitle title="On your services" count={onYours.length} hint="Watch now — no new subscriptions" />
           {onYours.length === 0 ? (
-            <p className="mt-2 text-zinc-400">Nothing new on your services yet — rate a few more shows or add a service.</p>
+            <p className="mt-3 text-zinc-400">Nothing new on your services yet — rate a few more shows or add a service.</p>
           ) : (
             <Grid>
               {onYours.map((t) => (
@@ -88,18 +93,19 @@ export default function ForYou({ library, onRate, region, serviceIds, onSelect, 
           )}
 
           {elsewhere.length > 0 && (
-            <div className="mt-12">
-              <button onClick={() => setShowElsewhere((s) => !s)} className="text-lg font-semibold hover:text-amber-200">
-                {showElsewhere ? '▾' : '▸'} Not on your services <span className="text-zinc-500">({elsewhere.length})</span>
-              </button>
-              {showElsewhere && (
-                <Grid>
-                  {elsewhere.map((t) => (
-                    <TitleCard key={keyOf(t)} title={t} providers={t.where.included} because={t.because} onSelect={onSelect} onRate={onRate} dim />
-                  ))}
-                </Grid>
-              )}
-            </div>
+            <Collapsible
+              title="Not on your services"
+              count={elsewhere.length}
+              hint="Worth knowing about"
+              open={showElsewhere}
+              onToggle={() => setShowElsewhere((s) => !s)}
+            >
+              <Grid>
+                {elsewhere.map((t) => (
+                  <TitleCard key={keyOf(t)} title={t} providers={t.where.included} because={t.because} onSelect={onSelect} onRate={onRate} dim />
+                ))}
+              </Grid>
+            </Collapsible>
           )}
         </>
       )}

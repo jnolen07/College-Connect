@@ -4,6 +4,8 @@ import { RATINGS, keyOf, pickDisliked } from '../library.js'
 import TitleCard, { Grid, Skeleton } from './TitleCard.jsx'
 import WhereToWatch from './WhereToWatch.jsx'
 import KindFilter from './KindFilter.jsx'
+import { Collapsible, ErrorNote, SectionTitle } from './Section.jsx'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
 
 // "Because you liked X" page for a single title.
 export default function Recommendations({ seed, region, serviceIds, library, onRate, onSelect, onBack }) {
@@ -38,16 +40,16 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
     <div>
       <div className="relative overflow-hidden">
         {seed.backdrop && <img src={`${IMG}/w1280${seed.backdrop}`} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75" />
-        <div className="relative mx-auto flex max-w-6xl gap-5 px-4 py-6">
-          {seed.poster && <img src={`${IMG}/w185${seed.poster}`} alt="" className="hidden w-28 shrink-0 rounded-xl shadow-lg sm:block" />}
-          <div className="min-w-0">
-            <button onClick={onBack} className="text-sm text-zinc-400 hover:text-zinc-200">
-              ← Back
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/80 to-[var(--bg)]/40" />
+        <div className="relative mx-auto flex max-w-6xl gap-6 px-4 pb-8 pt-6 sm:pt-8">
+          {seed.poster && <img src={`${IMG}/w342${seed.poster}`} alt="" className="hidden w-36 shrink-0 self-end rounded-xl shadow-2xl ring-1 ring-white/10 sm:block" />}
+          <div className="min-w-0 self-end">
+            <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white">
+              <ArrowLeft size={16} /> Back
             </button>
-            <p className="mt-3 text-xs uppercase tracking-[.25em] text-amber-200/70">Because you liked</p>
-            <h1 className="font-display text-2xl font-semibold sm:text-3xl">
-              {seed.title} {seed.year && <span className="font-sans text-xl font-normal text-zinc-400">({seed.year})</span>}
+            <p className="eyebrow mt-6">More like this</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+              {seed.title} {seed.year && <span className="text-2xl font-normal text-zinc-500">({seed.year})</span>}
             </h1>
             {state.seed?.genres?.length > 0 && <p className="mt-1 text-sm text-zinc-400">{state.seed.genres.map((g) => g.name).join(' · ')}</p>}
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -56,7 +58,7 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
                 <button
                   key={k}
                   onClick={() => onRate(seed, seedRating === k ? null : k)}
-                  className={`rounded-full px-3 py-1 text-sm transition ${seedRating === k ? 'bg-amber-300 text-black' : 'bg-zinc-900 hover:bg-zinc-800'}`}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${seedRating === k ? 'border-amber-300 bg-amber-300 text-black' : 'border-white/10 bg-white/[.03] hover:border-white/25'}`}
                 >
                   {r.emoji} {r.label}
                 </button>
@@ -68,9 +70,10 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
 
       <div className="mx-auto max-w-6xl px-4 pb-16">
         {seedWhere && (
-          <details open className="mb-6 rounded-2xl border border-white/10 bg-zinc-950 p-4 sm:p-5">
-            <summary className="cursor-pointer font-display text-lg">
-              <span className="gold-text">Where to watch {seed.title}</span>
+          <details open className="card group mb-2 p-5 sm:p-6">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 text-lg font-semibold">
+              Where to watch {seed.title}
+              <ChevronDown size={20} className="text-zinc-500 transition group-open:rotate-180" />
             </summary>
             <div className="mt-4">
               <WhereToWatch title={seed} where={seedWhere} serviceIds={serviceIds} />
@@ -79,15 +82,13 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
         )}
         <KindFilter kind={kind} setKind={setKind} />
         {state.loading && <Skeleton />}
-        {state.error && <p className="mt-4 rounded-lg bg-red-950 p-4 text-red-200">{state.error}</p>}
+        {state.error && <ErrorNote>{state.error}</ErrorNote>}
 
         {!state.loading && !state.error && (
           <>
-            <h2 className="mt-6 text-lg font-semibold">
-              On your services <span className="text-zinc-500">({onYours.length})</span>
-            </h2>
+            <SectionTitle title="On your services" count={onYours.length} hint="Watch now — no new subscriptions" />
             {onYours.length === 0 ? (
-              <p className="mt-2 text-zinc-400">Nothing similar is on your services right now. Check below, or add a service.</p>
+              <p className="mt-3 text-zinc-400">Nothing similar is on your services right now. Check below, or add a service.</p>
             ) : (
               <Grid>
                 {onYours.map((t) => (
@@ -96,22 +97,23 @@ export default function Recommendations({ seed, region, serviceIds, library, onR
               </Grid>
             )}
             {elsewhere.length > 0 && (
-              <div className="mt-12">
-                <button onClick={() => setShowElsewhere((s) => !s)} className="text-lg font-semibold hover:text-amber-200">
-                  {showElsewhere ? '▾' : '▸'} Not on your services <span className="text-zinc-500">({elsewhere.length})</span>
-                </button>
-                {showElsewhere && (
-                  <Grid>
-                    {elsewhere.map((t) => (
-                      <TitleCard key={keyOf(t)} title={t} providers={t.where.included} onSelect={onSelect} onRate={onRate} dim />
-                    ))}
-                  </Grid>
-                )}
-              </div>
+              <Collapsible
+                title="Not on your services"
+                count={elsewhere.length}
+                hint="Worth knowing about"
+                open={showElsewhere}
+                onToggle={() => setShowElsewhere((s) => !s)}
+              >
+                <Grid>
+                  {elsewhere.map((t) => (
+                    <TitleCard key={keyOf(t)} title={t} providers={t.where.included} onSelect={onSelect} onRate={onRate} dim />
+                  ))}
+                </Grid>
+              </Collapsible>
             )}
           </>
         )}
-        <p className="mt-12 text-xs text-zinc-600">Tip: tap any poster to see where to watch it, or “More like this” to keep going.</p>
+        <p className="mt-12 text-sm text-zinc-500">Tip: tap any poster to see where to watch it, or “More like this” to keep going.</p>
       </div>
     </div>
   )
