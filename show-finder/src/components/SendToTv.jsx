@@ -140,6 +140,16 @@ export default function SendToTv({ provider, serviceName, title, phoneLink, onCl
               </Way>
             </ol>
 
+            <a
+              href={phoneLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="btn-outline mt-5 w-full"
+            >
+              <Smartphone size={16} /> Watch on this device instead
+            </a>
+
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/[.06] pt-4 text-sm">
               <button onClick={() => setPicking(true)} className="flex items-center gap-1.5 text-zinc-400 hover:text-white">
                 <Tv size={15} /> {tv.name} · Change
