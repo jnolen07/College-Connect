@@ -3,9 +3,11 @@ import { IMG } from '../tmdb.js'
 import { RATINGS } from '../library.js'
 import { ServiceBadges } from './ServiceLogo.jsx'
 import { Film, Star } from 'lucide-react'
+import { groupBrands } from '../brands.js'
 
-export function ProviderLogos({ providers, max = 4 }) {
-  if (!providers?.length) return null
+export function ProviderLogos({ providers: raw, max = 4 }) {
+  if (!raw?.length) return null
+  const providers = groupBrands(raw) // one logo per service, not one per tier/channel
   return (
     <div className="flex items-center gap-1">
       {providers.slice(0, max).map((p) => (

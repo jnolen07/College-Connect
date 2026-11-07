@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Airplay, ArrowLeft, Cast, Check, Copy, Mic, Search, Smartphone, Tv, X } from 'lucide-react'
 import { IMG } from '../tmdb.js'
 import { load, save } from '../storage.js'
+import ServiceLogo from './ServiceLogo.jsx'
 
 // A website can't control a TV (browsers block talking to devices on your network, and streaming
 // services don't let other apps start playback). So "Send to TV" gives the fastest real way for the
@@ -98,7 +99,11 @@ export default function SendToTv({ provider, serviceName, title, phoneLink, onCl
           <>
             <p className="eyebrow">Send to TV</p>
             <div className="mt-3 flex items-center gap-3 pr-10">
-              {provider.logo ? (
+              {provider.service ? (
+                <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                  <ServiceLogo service={provider.service} className="!rounded-xl !p-2" />
+                </span>
+              ) : provider.logo ? (
                 <img src={`${IMG}/w92${provider.logo}`} alt="" className="h-12 w-12 shrink-0 rounded-xl" />
               ) : (
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/[.06] font-bold">{app[0]}</span>

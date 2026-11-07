@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Smartphone, Tv } from 'lucide-react'
 import { IMG } from '../tmdb.js'
-import { serviceFor } from '../services.js'
+import { groupBrands } from '../brands.js'
+import ServiceLogo from './ServiceLogo.jsx'
 import { watchUrl } from '../watchLinks.js'
 import { load, save } from '../storage.js'
 import SendToTv from './SendToTv.jsx'
@@ -10,24 +11,31 @@ import SendToTv from './SendToTv.jsx'
 // quickest way to get it playing on the viewer's TV.
 export default function WhereToWatch({ title, where, serviceIds }) {
   const [watchOn, setWatchOn] = useState(() => load('watchOn', 'device'))
-  const [tvFor, setTvFor] = useState(null) // provider being sent to the TV
+  const [tvFor, setTvFor] = useState(null) // brand being sent to the TV
   if (!where) return null
   const mine = new Set(serviceIds)
-  const isMine = (p) => mine.has(serviceFor(p)?.id)
 
-  const included = [...where.stream, ...where.free]
+  // One entry per service: all tiers and add-on channels (e.g. five kinds of Paramount+) become one.
+  const streamIds = new Set(where.stream.map((p) => p.id))
+  const included = groupBrands([...where.stream, ...where.free])
+  const isMine = (b) => mine.has(b.service?.id)
   const yours = included.filter(isMine)
-  const otherStream = where.stream.filter((p) => !isMine(p))
-  const free = where.free.filter((p) => !isMine(p))
+  const otherStream = included.filter((b) => !isMine(b) && b.members.some((m) => streamIds.has(m.id)))
+  const free = included.filter((b) => !isMine(b) && !b.members.some((m) => streamIds.has(m.id)))
 
-  // Merge rent + buy into one list so each store appears once.
-  const stores = new Map()
-  for (const p of where.rent) stores.set(p.id, { ...p, rent: true })
-  for (const p of where.buy) stores.set(p.id, { ...(stores.get(p.id) || p), buy: true })
-  const rentBuy = [...stores.values()]
+  // Stores to rent or buy from, once each, top few only (the TMDB link has the full list).
+  const shown = new Set(included.map((b) => b.key))
+  const rentIds = new Set(where.rent.map((p) => p.id))
+  const buyIds = new Set(where.buy.map((p) => p.id))
+  const allStores = groupBrands([...where.rent, ...where.buy])
+    .filter((b) => !shown.has(b.key))
+    .map((b) => ({ ...b, rent: b.members.some((m) => rentIds.has(m.id)), buy: b.members.some((m) => buyIds.has(m.id)) }))
+  const MAX_STORES = 4
+  const rentBuy = allStores.slice(0, MAX_STORES)
+  const moreStores = allStores.length - rentBuy.length
 
-  const nothing = !included.length && !rentBuy.length
-  const link = (p) => watchUrl(p, title.title, title.type, where.link)
+  const nothing = !included.length && !allStores.length
+  const link = (b) => watchUrl({ name: b.name }, title.title, title.type, where.link)
   const pick = (mode) => {
     setWatchOn(mode)
     save('watchOn', mode)
@@ -76,13 +84,13 @@ export default function WhereToWatch({ title, where, serviceIds }) {
       />
       {where.link && (
         <a href={where.link} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline">
-          Prices and every option on TMDB ↗
+          {moreStores > 0 ? `${moreStores} more place${moreStores === 1 ? '' : 's'} to rent or buy on TMDB ↗` : 'Prices and every option on TMDB ↗'}
         </a>
       )}
       {tvFor && (
         <SendToTv
           provider={tvFor}
-          serviceName={serviceFor(tvFor)?.name}
+          serviceName={tvFor.name}
           title={title}
           phoneLink={link(tvFor)}
           onClose={() => setTvFor(null)}
@@ -113,7 +121,11 @@ function Section({ label, hint, items, link, note, highlight, onTv, sendToTv }) 
                 : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900'
             }`}
           >
-            {p.logo ? (
+            {p.service ? (
+              <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                <ServiceLogo service={p.service} className="!rounded-lg !p-1.5" />
+              </span>
+            ) : p.logo ? (
               <img src={`${IMG}/w92${p.logo}`} alt="" className="h-10 w-10 shrink-0 rounded-lg" />
             ) : (
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold">{p.name[0]}</span>
