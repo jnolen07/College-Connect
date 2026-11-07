@@ -18,6 +18,9 @@ you pay for** first, so you don't have to sign up for anything new.
    services*, *Stream*, *Free*, and *Rent or buy*. Tap a service to open the title there
    (it opens that service's search for the title; unknown services go to TMDB's full list).
    Links are in `src/watchLinks.js`.
+   Switch **Watch on** to **TV** to get the quickest way onto your TV instead: what to say to your
+   voice remote, casting/AirPlay from the service's phone app, or searching on the TV. (A website
+   can't control a TV directly.) Steps are tailored to your TV type, asked once (`SendToTv.jsx`).
 6. **Search** any title for "more like this", and **My shows** to see/change what you've rated.
    Rate anything from any page with **Seen it?** and it drops out of your recommendations.
 
