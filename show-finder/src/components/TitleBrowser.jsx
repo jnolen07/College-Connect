@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { searchTitles, trending } from '../tmdb.js'
 import { keyOf } from '../library.js'
 import TitleCard, { Grid, Skeleton } from './TitleCard.jsx'
+import { Search } from 'lucide-react'
+import { ErrorNote } from './Section.jsx'
 
 // Search box + results (or trending when empty). Used by onboarding and the Search tab.
 export default function TitleBrowser({ library, onRate, onSelect, placeholder, autoFocus = true }) {
@@ -42,15 +44,20 @@ export default function TitleBrowser({ library, onRate, onSelect, placeholder, a
 
   return (
     <div>
-      <input
-        autoFocus={autoFocus}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder || 'Search any show or movie…'}
-        className="block w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-lg outline-none transition focus:border-amber-300/70 focus:shadow-[0_0_24px_rgba(241,210,127,.15)]"
-      />
-      {error && <p className="mt-4 rounded-lg bg-red-950 p-3 text-red-200">{error}</p>}
-      <h2 className="mt-8 text-lg font-semibold">
+      <div className="relative">
+        <Search size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <input
+          type="search"
+          aria-label="Search shows and movies"
+          autoFocus={autoFocus}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder || 'Search any show or movie…'}
+          className="block w-full rounded-2xl border border-white/10 bg-[var(--surface)] py-4 pl-12 pr-5 text-lg outline-none transition placeholder:text-zinc-500 focus:border-amber-300/60 focus:shadow-[0_0_0_4px_rgba(227,183,74,.12)]"
+        />
+      </div>
+      {error && <ErrorNote>{error}</ErrorNote>}
+      <h2 className="mt-10 text-xl font-semibold tracking-tight">
         {searching ? (loading ? 'Searching…' : `Results for “${query.trim()}”`) : 'Popular this week'}
       </h2>
       {searching && !loading && results.length === 0 && <p className="mt-2 text-zinc-400">Nothing found — try another spelling?</p>}

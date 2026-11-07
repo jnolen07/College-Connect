@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SERVICES } from '../services.js'
 import ServiceLogo from './ServiceLogo.jsx'
+import OnboardingBar from './OnboardingBar.jsx'
 
 export default function ServicePicker({ selected, onSave, onCancel, firstRun }) {
   const [picked, setPicked] = useState(new Set(selected))
@@ -11,12 +12,11 @@ export default function ServicePicker({ selected, onSave, onCancel, firstRun }) 
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="mx-auto max-w-4xl px-4 pb-32 pt-12">
-        {firstRun && <p className="text-xs uppercase tracking-[.3em] text-amber-200/60">Step 1 of 2</p>}
-        <h1 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">
-          <span className="gold-text">Which services do you use?</span>
-        </h1>
+    <div className="min-h-screen bg-[var(--bg)]">
+      <OnboardingBar step={firstRun ? 1 : null} label="Your services" />
+      <div className="mx-auto max-w-4xl px-4 pb-32 pt-10 sm:pt-14">
+        <p className="eyebrow">{firstRun ? 'Let’s get you set up' : 'Settings'}</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Which services do you use?</h1>
         <p className="mt-2 text-zinc-400">Pick as many as you have. We'll show you what you can watch without paying for anything new.</p>
 
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
@@ -50,16 +50,16 @@ export default function ServicePicker({ selected, onSave, onCancel, firstRun }) 
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/90 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/[.08] bg-black/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-4">
           <span className="flex-1 text-sm text-zinc-400">{picked.size} selected</span>
           {!firstRun && (
-            <button onClick={onCancel} className="rounded-full px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-900">
+            <button onClick={onCancel} className="btn-outline">
               Cancel
             </button>
           )}
           <button className="btn-gold" disabled={picked.size === 0} onClick={() => onSave([...picked])}>
-            {firstRun ? 'Next' : 'Save'}
+            {firstRun ? 'Continue' : 'Save'}
           </button>
         </div>
       </div>

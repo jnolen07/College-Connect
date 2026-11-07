@@ -22,8 +22,9 @@ export default function KeySetup({ onDone }) {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-xl rounded-2xl border border-amber-300/20 bg-zinc-950 p-6">
-      <h2 className="font-display text-xl gold-text">One-time setup</h2>
+    <form onSubmit={submit} className="card mx-auto max-w-xl p-6 sm:p-8">
+      <p className="eyebrow">One-time setup</p>
+      <h2 className="mt-2 text-2xl font-semibold tracking-tight">Connect the movie database</h2>
       <p className="mt-2 text-sm text-zinc-300">
         ShowFinder gets shows, movies and where-to-stream info from TMDB (free). Paste your TMDB key to turn on search
         and recommendations:
@@ -48,10 +49,10 @@ export default function KeySetup({ onDone }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Paste your TMDB key"
-        className="mt-4 w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 font-mono text-sm outline-none focus:border-amber-300"
+        className="mt-5 w-full rounded-xl border border-white/10 bg-black px-4 py-3 font-mono text-sm outline-none transition focus:border-amber-300/70"
       />
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
-      <button className="btn-gold mt-4" disabled={!value.trim() || busy}>
+      <button className="btn-gold mt-4 w-full sm:w-auto" disabled={!value.trim() || busy}>
         {busy ? 'Checking…' : 'Save key'}
       </button>
     </form>

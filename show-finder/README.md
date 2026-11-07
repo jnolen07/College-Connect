@@ -6,7 +6,9 @@ you pay for** first, so you don't have to sign up for anything new.
 
 ## What it does
 
-1. **Intro**: black screen, gold "ShowFinder" under a moving spotlight → **Next**.
+1. **Landing page**: gold "ShowFinder" under a moving spotlight, then How it works, the supported
+   services, features, an FAQ and a footer (with About and Privacy pages). Returning visitors get
+   "Continue to my picks"; "New here? Start fresh" lets someone else set it up on the same device.
 2. **Pick your services**: the top 10 (Netflix, Prime Video, Disney+, HBO Max, Hulu,
    Peacock, Paramount+, Apple TV, Crunchyroll, Tubi) with their real logos. Select as many as you use.
 3. **What have you watched?**: search shows/movies and rate them ❤️ Loved / 👍 Liked / 👎 Not for me.
