@@ -5,9 +5,13 @@ const BASE = 'https://api.themoviedb.org/3'
 export const IMG = 'https://image.tmdb.org/t/p'
 import { serviceFor, serviceById } from './services.js'
 
-// Key comes from the build (VITE_TMDB_API_KEY) or, if missing, one pasted into the site itself.
+// How the app reaches TMDB:
+//  'proxy'  – through /api/tmdb on our own server (normal; the key never reaches the browser)
+//  'direct' – straight to TMDB with a key pasted into this browser (only when there's no server,
+//             e.g. running locally with plain `vite`, or the server has no key configured)
 const LS_KEY = 'showfinder:tmdbKey'
-let KEY = import.meta.env.VITE_TMDB_API_KEY || readStoredKey()
+let mode = null
+let KEY = readStoredKey()
 function readStoredKey() {
   try {
     return localStorage.getItem(LS_KEY) || ''
@@ -15,14 +19,33 @@ function readStoredKey() {
     return ''
   }
 }
-export const hasKey = () => Boolean(KEY)
+
+/** Find a working connection. Resolves true when the app can talk to TMDB. */
+export async function connect() {
+  try {
+    const res = await fetch('/api/tmdb?path=/configuration')
+    // Without a server, a dev server answers with the HTML page instead of JSON.
+    if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
+      mode = 'proxy'
+      return true
+    }
+  } catch {
+    /* no server — fall through */
+  }
+  mode = KEY ? 'direct' : null
+  return Boolean(mode)
+}
+
+/** Use a personal key in this browser (fallback when the site's server has no key). */
 export async function setKey(k) {
-  const prev = KEY
+  const prev = { KEY, mode }
   KEY = k.trim()
+  mode = 'direct'
   try {
     await get('/configuration')
   } catch (e) {
-    KEY = prev
+    KEY = prev.KEY
+    mode = prev.mode
     throw e
   }
   try {
@@ -35,25 +58,32 @@ const isBearer = () => KEY.startsWith('eyJ')
 
 const cache = new Map()
 
-async function get(path, params = {}) {
-  const url = new URL(BASE + path)
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v)
+function buildRequest(path, params) {
+  const clean = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  if (mode === 'proxy') {
+    const qs = new URLSearchParams([['path', path], ...clean.map(([k, v]) => [k, String(v)])])
+    return { url: `/api/tmdb?${qs}`, init: {} }
   }
+  const url = new URL(BASE + path)
+  for (const [k, v] of clean) url.searchParams.set(k, v)
   if (!isBearer()) url.searchParams.set('api_key', KEY)
-  const cacheKey = url.toString()
-  if (cache.has(cacheKey)) return cache.get(cacheKey)
+  return { url: url.toString(), init: { headers: isBearer() ? { Authorization: `Bearer ${KEY}` } : {} } }
+}
 
-  const promise = fetch(url, {
-    headers: isBearer() ? { Authorization: `Bearer ${KEY}` } : {},
-  }).then(async (res) => {
+async function get(path, params = {}) {
+  const { url, init } = buildRequest(path, params)
+  if (cache.has(url)) return cache.get(url)
+
+  const promise = fetch(url, init).then(async (res) => {
     if (!res.ok) {
-      cache.delete(cacheKey)
-      throw new Error(res.status === 401 ? 'Invalid TMDB API key' : `TMDB error ${res.status}`)
+      cache.delete(url)
+      if (mode === 'direct' && res.status === 401) throw new Error('Invalid TMDB API key')
+      throw new Error("Couldn't reach the movie database. Please try again in a moment.")
     }
     return res.json()
   })
-  cache.set(cacheKey, promise)
+  promise.catch(() => cache.delete(url))
+  cache.set(url, promise)
   return promise
 }
 
