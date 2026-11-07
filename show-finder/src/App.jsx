@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { details, hasKey, normalize } from './tmdb.js'
+import { connect, details, normalize } from './tmdb.js'
 import { guessRegion, load, save } from './storage.js'
 import { useLibrary } from './library.js'
 import Landing from './components/Landing.jsx'
@@ -44,12 +44,16 @@ export default function App() {
   const [serviceIds, setServiceIds] = useState(() => load('services', []).filter((id) => SERVICES.some((s) => s.id === id)))
   const [onboarded, setOnboarded] = useState(() => load('onboarded', false))
   const [editingServices, setEditingServices] = useState(false)
-  const [keyOk, setKeyOk] = useState(hasKey())
+  const [keyOk, setKeyOk] = useState(null) // null = still checking the connection to TMDB
   const [region] = useState(() => load('region', guessRegion()))
   const [route, setRoute] = useState(parseHash)
   const [seed, setSeed] = useState(null)
   const [sheet, setSheet] = useState(null) // title whose details + where-to-watch are open
   const { library, rate } = useLibrary()
+
+  useEffect(() => {
+    connect().then(setKeyOk)
+  }, [])
 
   useEffect(() => {
     const onHash = () => setRoute(parseHash())
@@ -112,6 +116,15 @@ export default function App() {
           setEditingServices(false)
         }}
       />
+    )
+  }
+
+  if (keyOk === null) {
+    return (
+      <div className="min-h-screen bg-[var(--bg)]">
+        <OnboardingBar />
+        <div className="mx-auto mt-24 h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-amber-300" role="status" aria-label="Loading" />
+      </div>
     )
   }
 

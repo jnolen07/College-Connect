@@ -26,8 +26,12 @@ export default function KeySetup({ onDone }) {
       <p className="eyebrow">One-time setup</p>
       <h2 className="mt-2 text-2xl font-semibold tracking-tight">Connect the movie database</h2>
       <p className="mt-2 text-sm text-zinc-300">
-        ShowFinder gets shows, movies and where-to-stream info from TMDB (free). Paste your TMDB key to turn on search
-        and recommendations:
+        This copy of ShowFinder isn’t connected to TMDB, the free movie database it gets shows and streaming info from.
+      </p>
+      <p className="mt-2 text-sm text-zinc-400">
+        <b className="text-zinc-200">Site owner:</b> add your key as <code className="rounded bg-white/10 px-1">TMDB_API_KEY</code> in
+        Vercel → Settings → Environment Variables, then redeploy. <b className="text-zinc-200">Just trying it?</b> Paste your own
+        TMDB key below — it’s only saved in this browser:
       </p>
       <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-zinc-400">
         <li>

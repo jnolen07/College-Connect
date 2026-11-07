@@ -96,8 +96,9 @@ const PAGES = {
         'Services ShowFinder talks to',
         <>
           <p>
-            To show titles and recommendations, your browser requests data and images directly from TMDB (themoviedb.org). Search
-            terms and the titles you look at are sent to TMDB as part of those requests.
+            To show titles, recommendations and streaming availability, the app asks ShowFinder’s server (hosted on Vercel), which
+            looks them up from TMDB (themoviedb.org). Search terms and the titles you look at pass through it to TMDB, and the
+            answers are cached so popular lookups are faster — they aren’t linked to you. Posters and logos load directly from TMDB.
           </p>
           <p>
             Fonts load from Google Fonts, and two service logos load from Google’s icon service. The site is hosted on Vercel,

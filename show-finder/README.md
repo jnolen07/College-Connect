@@ -46,32 +46,31 @@ where-to-stream data is powered by JustWatch. For the shows you loved, ShowFinde
 
 The logic lives in `src/tmdb.js` (`recommend()` / `recommendForYou()`).
 
-## Setup (≈10 minutes)
+## Setup
 
-1. **Get a free TMDB key**: sign up at themoviedb.org → Settings → API → request a key
-   (choose "Developer", personal use is fine). Copy either the *API Key* or the
-   *API Read Access Token* — both work.
-2. **Run locally** (needs Node.js):
+ShowFinder talks to TMDB through a small server function, `api/tmdb.js` (a Vercel Function at
+`/api/tmdb`). It holds the TMDB key so it never reaches visitors' browsers, only allows the requests
+the app makes, and caches answers on Vercel's CDN.
+
+1. **Get a free TMDB key**: sign up at themoviedb.org → Settings → API → request a key (personal
+   use is fine). Either the *API Key* or the *API Read Access Token* works.
+2. **Deploy on Vercel**: import the repo with **Root Directory** `show-finder`, and add the
+   environment variable **`TMDB_API_KEY`** (Settings → Environment Variables). Redeploy after adding
+   or changing it. (An older `VITE_TMDB_API_KEY` variable is still read by the server function as a
+   fallback, but rename it to `TMDB_API_KEY` when you can.)
+3. **Run locally** (needs Node.js):
 
    ```bash
    cd show-finder
-   cp .env.example .env      # then paste your key into .env
    npm install
-   npm run dev
+   npx vercel dev     # runs the site and /api/tmdb, reading TMDB_API_KEY from .env
    ```
 
-3. **Deploy on Vercel**: New Project → import this repo → set **Root Directory** to
-   `show-finder` → add the environment variable `VITE_TMDB_API_KEY` → Deploy.
-
-No key set on the server? The site asks for one on first use and saves it in that browser,
-so you can also just paste it there.
+   Plain `npm run dev` works too, but without the server function: the site then asks for a
+   key and keeps it in that browser only.
 
 Logos: bundled brand marks from Simple Icons; Disney+ and Peacock load their official site
 icons at runtime (with a text fallback). The service list lives in `src/services.js`.
-
-Note: the key ends up in the browser bundle. TMDB keys are read-only and this is a common
-setup for TMDB apps, but if you ever want to hide it, move the calls in `src/tmdb.js` behind a
-small serverless function.
 
 TMDB's terms ask apps to credit them: "This product uses the TMDB API but is not endorsed or
 certified by TMDB."
