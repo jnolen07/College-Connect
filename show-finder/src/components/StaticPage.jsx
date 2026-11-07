@@ -106,7 +106,17 @@ const PAGES = {
           </p>
         </>,
       ],
-      ['Cookies and tracking', <p key="d">ShowFinder doesn’t use advertising, analytics or tracking cookies.</p>],
+      [
+        'Visitor statistics',
+        <>
+          <p>
+            ShowFinder counts visits with Vercel Web Analytics so we can see how many people use it and which pages they visit.
+            It doesn’t use cookies and doesn’t identify you: it records things like the page viewed, the referring site, your
+            country, and your browser and device type, and it can’t follow you across days or other websites.
+          </p>
+          <p>ShowFinder has no advertising and no tracking cookies.</p>
+        </>,
+      ],
     ],
   },
 }

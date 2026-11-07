@@ -1,4 +1,5 @@
 import Logo from './Logo.jsx'
+import { FEEDBACK_URL } from '../config.js'
 
 export default function SiteFooter({ compact }) {
   const year = new Date().getFullYear()
@@ -24,6 +25,11 @@ export default function SiteFooter({ compact }) {
                 {label}
               </a>
             ))}
+            {FEEDBACK_URL && (
+              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="text-amber-200/80 transition hover:text-amber-100">
+                Send feedback ↗
+              </a>
+            )}
           </nav>
         </div>
         <div className="mt-10 flex flex-col gap-3 border-t border-white/[.06] pt-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
